@@ -14,11 +14,12 @@ namespace Ucppabd
     public partial class Pemilik : Form
     {
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+
         public Pemilik()
         {
             InitializeComponent();
             LoadData();
-            dataGridViewPemilik.CellClick += DataGridViewPemilik_CellClick; 
+            dataGridViewPemilik.CellClick += DataGridViewPemilik_CellClick;
         }
 
         private void DataGridViewPemilik_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -31,17 +32,6 @@ namespace Ucppabd
                 txtEmail.Text = row.Cells["Email"].Value.ToString();
                 txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
             }
-        }
-
-
-        private void Dokter_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
         }
 
         private void btnTambah_Click(object sender, EventArgs e)
@@ -68,15 +58,20 @@ namespace Ucppabd
         {
             if (dataGridViewPemilik.CurrentRow != null)
             {
-                int id = Convert.ToInt32(dataGridViewPemilik.CurrentRow.Cells["ID"].Value);
+                string idString = dataGridViewPemilik.CurrentRow.Cells["ID_Pemilik"].Value?.ToString();
+                if (!int.TryParse(idString, out int id))
+                {
+                    MessageBox.Show("ID Pemilik tidak valid. Pastikan ID berupa angka.");
+                    return;
+                }
 
-                var confirm = MessageBox.Show("Yakin ingin menghapus data Dokter ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var confirm = MessageBox.Show("Yakin ingin menghapus data Pemilik ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (confirm == DialogResult.Yes)
                 {
                     using (SqlConnection con = new SqlConnection(connectionString))
                     {
-                        string query = "DELETE FROM Dokter WHERE ID = @id";
+                        string query = "DELETE FROM Pemilik WHERE ID_Pemilik = @id";
                         SqlCommand cmd = new SqlCommand(query, con);
                         cmd.Parameters.AddWithValue("@id", id);
 
@@ -94,12 +89,19 @@ namespace Ucppabd
         {
             if (dataGridViewPemilik.CurrentRow != null)
             {
+                string idString = txtIDPemilik.Text;
+                if (!int.TryParse(idString, out int id))
+                {
+                    MessageBox.Show("ID Pemilik tidak valid. Pastikan ID berupa angka.");
+                    return;
+                }
+
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    string query = "UPDATE Pemilik SET ID_Pemilik=@ID_Pemilik, Nama=@Nama, Email=@Email, Telepon=@Telepon WHERE ID_Pemilik=@ID_Pemilik";
+                    string query = "UPDATE Pemilik SET Nama=@Nama, Email=@Email, Telepon=@Telepon WHERE ID_Pemilik=@ID_Pemilik";
 
                     SqlCommand cmd = new SqlCommand(query, con);
-                    cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text);
+                    cmd.Parameters.AddWithValue("@ID_Pemilik", id);
                     cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
                     cmd.Parameters.AddWithValue("@Email", txtEmail.Text);
                     cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text);
@@ -114,28 +116,14 @@ namespace Ucppabd
             }
         }
 
-
-        private void dataGridViewDokter_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                DataGridViewRow row = dataGridViewPemilik.Rows[e.RowIndex];
-
-                txtIDPemilik.Text = row.Cells["ID_Pemilik"].Value.ToString();
-                txtNama.Text = row.Cells["Nama"].Value.ToString();
-                txtEmail.Text = row.Cells["Email"].Value.ToString();
-                txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
-            }
-        }
-
         private void ClearForm()
         {
             txtIDPemilik.Clear();
             txtNama.Clear();
             txtEmail.Clear();
             txtTelepon.Clear();
-
         }
+
         private void LoadData()
         {
             try
@@ -155,9 +143,7 @@ namespace Ucppabd
             }
         }
 
-        private void Pemilik_Load(object sender, EventArgs e)
-        {
-
-        }
+        private void Pemilik_Load(object sender, EventArgs e) { }
+        private void label1_Click(object sender, EventArgs e) { }
     }
 }

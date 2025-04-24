@@ -14,6 +14,7 @@ namespace Ucppabd
     public partial class Dokter : Form
     {
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+
         public Dokter()
         {
             InitializeComponent();
@@ -21,15 +22,9 @@ namespace Ucppabd
             dataGridViewDokter.CellClick += dataGridViewDokter_CellContentClick;
         }
 
-        private void Dokter_Load(object sender, EventArgs e)
-        {
+        private void Dokter_Load(object sender, EventArgs e) { }
 
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
+        private void label1_Click(object sender, EventArgs e) { }
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
@@ -55,7 +50,12 @@ namespace Ucppabd
         {
             if (dataGridViewDokter.CurrentRow != null)
             {
-                int id = Convert.ToInt32(dataGridViewDokter.CurrentRow.Cells["ID"].Value);
+                string idString = dataGridViewDokter.CurrentRow.Cells["ID"].Value?.ToString();
+                if (!int.TryParse(idString, out int id))
+                {
+                    MessageBox.Show("ID dokter tidak valid. Pastikan ID berupa angka.");
+                    return;
+                }
 
                 var confirm = MessageBox.Show("Yakin ingin menghapus data Dokter ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
@@ -81,18 +81,22 @@ namespace Ucppabd
         {
             if (dataGridViewDokter.CurrentRow != null)
             {
-                int id = Convert.ToInt32(dataGridViewDokter.CurrentRow.Cells["ID"].Value);
+                string idString = dataGridViewDokter.CurrentRow.Cells["ID"].Value?.ToString();
+                if (!int.TryParse(idString, out int id))
+                {
+                    MessageBox.Show("ID dokter tidak valid. Pastikan ID berupa angka.");
+                    return;
+                }
 
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    string query = "UPDATE Dokter SET ID=@ID, Nama=@Nama, Spesialisasi=@Spesialisasi, Telepon=@Telepon WHERE ID=@ID";
+                    string query = "UPDATE Dokter SET Nama=@Nama, Spesialisasi=@Spesialisasi, Telepon=@Telepon WHERE ID=@ID";
 
                     SqlCommand cmd = new SqlCommand(query, con);
-                    cmd.Parameters.AddWithValue("@ID", txtID.Text);
+                    cmd.Parameters.AddWithValue("@ID", id);
                     cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
                     cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text);
                     cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text);
-
 
                     con.Open();
                     cmd.ExecuteNonQuery();
@@ -123,8 +127,8 @@ namespace Ucppabd
             txtNama.Clear();
             txtSpesialisasi.Clear();
             txtTelepon.Clear();
-
         }
+
         private void LoadData()
         {
             try
