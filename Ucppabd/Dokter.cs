@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Ucppabd
@@ -22,56 +16,90 @@ namespace Ucppabd
             dataGridViewDokter.CellClick += dataGridViewDokter_CellContentClick;
         }
 
-        private void Dokter_Load(object sender, EventArgs e) { }
-
-        private void label1_Click(object sender, EventArgs e) { }
+        private void LoadData()
+        {
+            try
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    string query = "SELECT ID, Nama, Spesialisasi, Telepon FROM Dokter";
+                    SqlDataAdapter da = new SqlDataAdapter(query, con);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    dataGridViewDokter.DataSource = dt;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal memuat data: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
+            {
+                MessageBox.Show("ID dan Nama Dokter wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             using (SqlConnection con = new SqlConnection(connectionString))
             {
-                string query = "INSERT INTO Dokter (ID, Nama, Spesialisasi, Telepon) VALUES (@ID, @Nama, @Spesialisasi, @Telepon)";
-                SqlCommand cmd = new SqlCommand(query, con);
+                try
+                {
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand("AddDokter", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
 
-                cmd.Parameters.AddWithValue("@ID", txtID.Text);
-                cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
-                cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text);
-                cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text);
-
-                con.Open();
-                cmd.ExecuteNonQuery();
-                MessageBox.Show("Data berhasil ditambahkan");
-                ClearForm();
-                LoadData();
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Data dokter berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            if (dataGridViewDokter.CurrentRow != null)
+            if (dataGridViewDokter.CurrentRow == null)
             {
-                string idString = dataGridViewDokter.CurrentRow.Cells["ID"].Value?.ToString();
-                if (!int.TryParse(idString, out int id))
-                {
-                    MessageBox.Show("ID dokter tidak valid. Pastikan ID berupa angka.");
-                    return;
-                }
+                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                var confirm = MessageBox.Show("Yakin ingin menghapus data Dokter ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            var confirm = MessageBox.Show("Yakin ingin menghapus data Dokter ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
+            {
+                string id = dataGridViewDokter.CurrentRow.Cells["ID"].Value.ToString();
 
-                if (confirm == DialogResult.Yes)
+                using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    using (SqlConnection con = new SqlConnection(connectionString))
+                    try
                     {
-                        string query = "DELETE FROM Dokter WHERE ID = @id";
-                        SqlCommand cmd = new SqlCommand(query, con);
-                        cmd.Parameters.AddWithValue("@id", id);
-
                         con.Open();
-                        cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil dihapus", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        ClearForm();
-                        LoadData();
+                        using (SqlCommand cmd = new SqlCommand("DeleteDokter", con))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID", id);
+                            cmd.ExecuteNonQuery();
+                            MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadData();
+                            ClearForm();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -79,31 +107,34 @@ namespace Ucppabd
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
-            if (dataGridViewDokter.CurrentRow != null)
+            if (dataGridViewDokter.CurrentRow == null)
             {
-                string idString = dataGridViewDokter.CurrentRow.Cells["ID"].Value?.ToString();
-                if (!int.TryParse(idString, out int id))
+                MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                try
                 {
-                    MessageBox.Show("ID dokter tidak valid. Pastikan ID berupa angka.");
-                    return;
-                }
-
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    string query = "UPDATE Dokter SET Nama=@Nama, Spesialisasi=@Spesialisasi, Telepon=@Telepon WHERE ID=@ID";
-
-                    SqlCommand cmd = new SqlCommand(query, con);
-                    cmd.Parameters.AddWithValue("@ID", id);
-                    cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
-                    cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text);
-                    cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text);
-
                     con.Open();
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand("UpdateDokter", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
 
-                    MessageBox.Show("Data berhasil diperbarui");
-                    ClearForm();
-                    LoadData();
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -113,7 +144,6 @@ namespace Ucppabd
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = dataGridViewDokter.Rows[e.RowIndex];
-
                 txtID.Text = row.Cells["ID"].Value.ToString();
                 txtNama.Text = row.Cells["Nama"].Value.ToString();
                 txtSpesialisasi.Text = row.Cells["Spesialisasi"].Value.ToString();
@@ -129,23 +159,9 @@ namespace Ucppabd
             txtTelepon.Clear();
         }
 
-        private void LoadData()
-        {
-            try
-            {
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT * FROM Dokter";
-                    SqlDataAdapter da = new SqlDataAdapter(query, con);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-                    dataGridViewDokter.DataSource = dt;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Gagal memuat data: " + ex.Message);
-            }
-        }
+        private void Dokter_Load(object sender, EventArgs e) { }
     }
 }
+
+
+

@@ -16,71 +16,102 @@ namespace Ucppabd
             dataGridViewJanjiTemu.CellClick += dataGridViewJanjiTemu_CellContentClick;
         }
 
+        private void LoadData()
+        {
+            try
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    // Menggunakan View_JanjiTemuDetail untuk data yang lebih mudah dibaca
+                    string query = "SELECT ID_JanjiTemu, NamaHewan, NamaPemilik, NamaDokter, Tanggal FROM View_JanjiTemuDetail";
+                    SqlDataAdapter da = new SqlDataAdapter(query, con);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    dataGridViewJanjiTemu.DataSource = dt;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal memuat data: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void btnTambah_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(txtIDJanjiTemu.Text) || string.IsNullOrWhiteSpace(txtIDHewan.Text) || string.IsNullOrWhiteSpace(txtID.Text))
+            {
+                MessageBox.Show("Semua ID (Janji Temu, Hewan, Dokter) wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!DateTime.TryParse(txtTanggal.Text, out DateTime tanggal))
+            {
+                MessageBox.Show("Format tanggal tidak valid (misal: 2025-06-10)", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             using (SqlConnection con = new SqlConnection(connectionString))
             {
-                // Mengecek apakah ID Dokter valid
-                string checkDokterQuery = "SELECT COUNT(1) FROM Dokter WHERE ID = @ID_Dokter";
-                SqlCommand checkCmd = new SqlCommand(checkDokterQuery, con);
-                checkCmd.Parameters.AddWithValue("@ID_Dokter", txtID.Text);
-
-                con.Open();
-                int dokterCount = (int)checkCmd.ExecuteScalar();
-
-                if (dokterCount == 0)
+                try
                 {
-                    MessageBox.Show("ID Dokter tidak ditemukan. Pastikan ID Dokter yang dimasukkan valid.");
-                    return;
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand("AddJanjiTemu", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID_JanjiTemu", txtIDJanjiTemu.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Dokter", txtID.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Tanggal", tanggal);
+
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Janji Temu berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
                 }
-
-                // Menambahkan janji temu
-                string query = "INSERT INTO JanjiTemu (ID_JanjiTemu, ID_Hewan, ID_Dokter, Tanggal) " +
-                               "VALUES (@ID_JanjiTemu, @ID_Hewan, @ID_Dokter, @Tanggal)";
-                SqlCommand cmd = new SqlCommand(query, con);
-
-                cmd.Parameters.AddWithValue("@ID_JanjiTemu", txtIDJanjiTemu.Text);
-                cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text);
-                cmd.Parameters.AddWithValue("@ID_Dokter", txtID.Text);
-
-                DateTime tanggal;
-                if (DateTime.TryParse(txtTanggal.Text, out tanggal))
+                catch (SqlException ex)
                 {
-                    cmd.Parameters.AddWithValue("@Tanggal", tanggal);
+                    // Menangkap error dari RAISERROR di Stored Procedure
+                    MessageBox.Show(ex.Message, "Kesalahan Validasi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                else
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Format tanggal tidak valid (misal: 2025-04-23)");
-                    return;
+                    MessageBox.Show("Terjadi kesalahan: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-
-                cmd.ExecuteNonQuery();
-                MessageBox.Show("Janji Temu berhasil ditambahkan!");
-                ClearForm();
-                LoadData();
             }
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            if (dataGridViewJanjiTemu.CurrentRow != null)
+            if (dataGridViewJanjiTemu.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data janji temu yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show("Yakin ingin menghapus janji temu ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
             {
                 string id = dataGridViewJanjiTemu.CurrentRow.Cells["ID_JanjiTemu"].Value.ToString();
 
-                var confirm = MessageBox.Show("Yakin ingin menghapus janji temu ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (confirm == DialogResult.Yes)
+                using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    using (SqlConnection con = new SqlConnection(connectionString))
+                    try
                     {
-                        string query = "DELETE FROM JanjiTemu WHERE ID_JanjiTemu = @ID";
-                        SqlCommand cmd = new SqlCommand(query, con);
-                        cmd.Parameters.AddWithValue("@ID", id);
-
                         con.Open();
-                        cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil dihapus!");
-                        ClearForm();
-                        LoadData();
+                        using (SqlCommand cmd = new SqlCommand("DeleteJanjiTemu", con))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID_JanjiTemu", id);
+                            cmd.ExecuteNonQuery();
+                            MessageBox.Show("Data berhasil dihapus!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadData();
+                            ClearForm();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -88,35 +119,40 @@ namespace Ucppabd
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
-            if (dataGridViewJanjiTemu.CurrentRow != null)
+            if (dataGridViewJanjiTemu.CurrentRow == null)
             {
-                string id = txtIDJanjiTemu.Text;
+                MessageBox.Show("Pilih data janji temu yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                using (SqlConnection con = new SqlConnection(connectionString))
+            if (!DateTime.TryParse(txtTanggal.Text, out DateTime tanggal))
+            {
+                MessageBox.Show("Format tanggal tidak valid.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                try
                 {
-                    string query = "UPDATE JanjiTemu SET ID_Hewan=@ID_Hewan, ID_Dokter=@ID_Dokter, Tanggal=@Tanggal WHERE ID_JanjiTemu=@ID_JanjiTemu";
-                    SqlCommand cmd = new SqlCommand(query, con);
-
-                    cmd.Parameters.AddWithValue("@ID_JanjiTemu", id);
-                    cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text);
-                    cmd.Parameters.AddWithValue("@ID_Dokter", txtID.Text);
-
-                    DateTime tanggal;
-                    if (DateTime.TryParse(txtTanggal.Text, out tanggal))
-                    {
-                        cmd.Parameters.AddWithValue("@Tanggal", tanggal);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Format tanggal tidak valid.");
-                        return;
-                    }
-
                     con.Open();
-                    cmd.ExecuteNonQuery();
-                    MessageBox.Show("Data berhasil diperbarui!");
-                    ClearForm();
-                    LoadData();
+                    using (SqlCommand cmd = new SqlCommand("UpdateJanjiTemu", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID_JanjiTemu", txtIDJanjiTemu.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Dokter", txtID.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Tanggal", tanggal);
+
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Data berhasil diperbarui!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -125,11 +161,17 @@ namespace Ucppabd
         {
             if (e.RowIndex >= 0)
             {
+                // Mengisi data ke textbox. Karena data grid view sudah detail,
+                // kita perlu mengambil ID dari sumber data aslinya (DataTable)
+                // atau cukup mengisi ID JanjiTemu saja untuk operasi update/delete.
                 DataGridViewRow row = dataGridViewJanjiTemu.Rows[e.RowIndex];
                 txtIDJanjiTemu.Text = row.Cells["ID_JanjiTemu"].Value.ToString();
-                txtIDHewan.Text = row.Cells["ID_Hewan"].Value.ToString();
-                txtID.Text = row.Cells["ID_Dokter"].Value.ToString();
-                txtTanggal.Text = row.Cells["Tanggal"].Value.ToString();
+                txtTanggal.Text = Convert.ToDateTime(row.Cells["Tanggal"].Value).ToString("yyyy-MM-dd");
+
+                // ID Hewan dan Dokter tidak bisa diambil langsung dari view ini
+                // Pengguna harus mengisinya manual jika ingin update
+                txtIDHewan.Clear();
+                txtID.Clear();
             }
         }
 
@@ -139,25 +181,6 @@ namespace Ucppabd
             txtIDHewan.Clear();
             txtID.Clear();
             txtTanggal.Clear();
-        }
-
-        private void LoadData()
-        {
-            try
-            {
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT * FROM JanjiTemu";
-                    SqlDataAdapter da = new SqlDataAdapter(query, con);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-                    dataGridViewJanjiTemu.DataSource = dt;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Gagal memuat data: " + ex.Message);
-            }
         }
     }
 }

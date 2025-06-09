@@ -16,66 +16,109 @@ namespace Ucppabd
             dataGridViewHewan.CellClick += dataGridViewHewan_CellContentClick;
 
             // Tambahkan isi ComboBox satuan umur
-            cmbSatuanUmur.Items.AddRange(new string[] { "Hari", "Bulan", "Tahun" });
-            cmbSatuanUmur.SelectedIndex = 0;
+            if (cmbSatuanUmur.Items.Count == 0)
+            {
+                cmbSatuanUmur.Items.AddRange(new string[] { "Hari", "Bulan", "Tahun" });
+                cmbSatuanUmur.SelectedIndex = 2; // Default ke "Tahun"
+            }
+        }
+
+        private void LoadData()
+        {
+            try
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    string query = "SELECT ID_Hewan, ID_Pemilik, Nama, Jenis, Umur, SatuanUmur FROM Hewan";
+                    SqlDataAdapter da = new SqlDataAdapter(query, con);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    dataGridViewHewan.DataSource = dt;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal memuat data: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            // Memastikan umur adalah angka valid
-            int umurAngka;
-            bool isValidUmur = int.TryParse(txtUmur.Text, out umurAngka);
-
-            if (isValidUmur)
+            if (string.IsNullOrWhiteSpace(txtIDHewan.Text) || string.IsNullOrWhiteSpace(txtIDPemilik.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
             {
-                string satuanUmur = cmbSatuanUmur.SelectedItem.ToString();  // Ambil satuan umur
-
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    string query = "INSERT INTO Hewan (ID_Hewan, ID_Pemilik, Nama, Jenis, UmurAngka, SatuanUmur) VALUES (@ID_Hewan, @ID_Pemilik, @Nama, @Jenis, @UmurAngka, @SatuanUmur)";
-                    SqlCommand cmd = new SqlCommand(query, con);
-
-                    cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text);
-                    cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text);
-                    cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
-                    cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text);
-                    cmd.Parameters.AddWithValue("@UmurAngka", umurAngka);
-                    cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
-
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                    MessageBox.Show("Data berhasil ditambahkan");
-                    ClearForm();
-                    LoadData();
-                }
+                MessageBox.Show("ID Hewan, ID Pemilik, dan Nama wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
-            else
+
+            if (!int.TryParse(txtUmur.Text, out int umurAngka))
             {
-                MessageBox.Show("Format umur tidak valid. Harap masukkan angka.");
+                MessageBox.Show("Format umur tidak valid. Harap masukkan angka.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string satuanUmur = cmbSatuanUmur.SelectedItem.ToString();
+
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                try
+                {
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand("AddHewan", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
+                        cmd.Parameters.AddWithValue("@UmurAngka", umurAngka);
+                        cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
+
+                        cmd.ExecuteNonQuery();
+                        MessageBox.Show("Data hewan berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            if (dataGridViewHewan.CurrentRow != null)
+            if (dataGridViewHewan.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show("Yakin ingin menghapus data hewan ini? Menghapus hewan juga akan menghapus janji temu terkait.", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
             {
                 string id = dataGridViewHewan.CurrentRow.Cells["ID_Hewan"].Value.ToString();
 
-                var confirm = MessageBox.Show("Yakin ingin menghapus data Hewan ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (confirm == DialogResult.Yes)
+                using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    using (SqlConnection con = new SqlConnection(connectionString))
+                    try
                     {
-                        string query = "DELETE FROM Hewan WHERE ID_Hewan = @id";
-                        SqlCommand cmd = new SqlCommand(query, con);
-                        cmd.Parameters.AddWithValue("@id", id);
-
                         con.Open();
-                        cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil dihapus", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        ClearForm();
-                        LoadData();
+                        using (SqlCommand cmd = new SqlCommand("DeleteHewan", con))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID_Hewan", id);
+
+                            cmd.ExecuteNonQuery();
+                            MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadData();
+                            ClearForm();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -83,39 +126,45 @@ namespace Ucppabd
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
-            if (dataGridViewHewan.CurrentRow != null)
+            if (dataGridViewHewan.CurrentRow == null)
             {
-                string id = dataGridViewHewan.CurrentRow.Cells["ID_Hewan"].Value.ToString();
-                int umurAngka;
-                bool isValidUmur = int.TryParse(txtUmur.Text, out umurAngka);
-                string satuanUmur = cmbSatuanUmur.SelectedItem.ToString();
+                MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                if (isValidUmur)
+            if (!int.TryParse(txtUmur.Text, out int umurAngka))
+            {
+                MessageBox.Show("Format umur tidak valid. Harap masukkan angka.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string satuanUmur = cmbSatuanUmur.SelectedItem.ToString();
+
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                try
                 {
-                    using (SqlConnection con = new SqlConnection(connectionString))
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand("UpdateHewan", con))
                     {
-                        string query = "UPDATE Hewan SET ID_Hewan=@ID_Hewan, ID_Pemilik=@ID_Pemilik, Nama=@Nama, Jenis=@Jenis, UmurAngka=@UmurAngka, SatuanUmur=@SatuanUmur WHERE ID_Hewan=@ID";
+                        cmd.CommandType = CommandType.StoredProcedure;
 
-                        SqlCommand cmd = new SqlCommand(query, con);
-                        cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text);
-                        cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text);
-                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
-                        cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text);
+                        cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
                         cmd.Parameters.AddWithValue("@UmurAngka", umurAngka);
                         cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
-                        cmd.Parameters.AddWithValue("@ID", id);
 
-                        con.Open();
                         cmd.ExecuteNonQuery();
-
-                        MessageBox.Show("Data berhasil diperbarui");
-                        ClearForm();
+                        MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadData();
+                        ClearForm();
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Format umur tidak valid. Harap masukkan angka.");
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -131,25 +180,17 @@ namespace Ucppabd
                 txtNama.Text = row.Cells["Nama"].Value.ToString();
                 txtJenis.Text = row.Cells["Jenis"].Value.ToString();
 
-                // Cek jika kolom UmurAngka dan SatuanUmur tidak null
-                if (row.Cells["UmurAngka"].Value != DBNull.Value)
-                {
-                    int umurAngka = Convert.ToInt32(row.Cells["UmurAngka"].Value);
-                    txtUmur.Text = umurAngka.ToString();
-                }
-                else
-                {
-                    txtUmur.Text = string.Empty;
-                }
+                // Menggunakan "Umur" sesuai nama kolom di database
+                txtUmur.Text = row.Cells["Umur"].Value.ToString();
 
+                // Cek jika kolom SatuanUmur tidak null
                 if (row.Cells["SatuanUmur"].Value != DBNull.Value)
                 {
-                    string satuanUmur = row.Cells["SatuanUmur"].Value.ToString();
-                    cmbSatuanUmur.SelectedItem = satuanUmur;
+                    cmbSatuanUmur.SelectedItem = row.Cells["SatuanUmur"].Value.ToString();
                 }
                 else
                 {
-                    cmbSatuanUmur.SelectedIndex = 0; // Atau sesuaikan dengan nilai default yang diinginkan
+                    cmbSatuanUmur.SelectedIndex = 2; // Default "Tahun"
                 }
             }
         }
@@ -161,36 +202,9 @@ namespace Ucppabd
             txtNama.Clear();
             txtJenis.Clear();
             txtUmur.Clear();
-            cmbSatuanUmur.SelectedIndex = 0;
+            cmbSatuanUmur.SelectedIndex = 2;
         }
 
-        private void LoadData()
-        {
-            try
-            {
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT * FROM Hewan";
-                    SqlDataAdapter da = new SqlDataAdapter(query, con);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-                    dataGridViewHewan.DataSource = dt;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Gagal memuat data: " + ex.Message);
-            }
-        }
-
-        private void Hewan_Load(object sender, EventArgs e)
-        {
-            // Pastikan ComboBox diisi saat form dimuat
-            if (cmbSatuanUmur.Items.Count == 0)
-            {
-                cmbSatuanUmur.Items.AddRange(new string[] { "Hari", "Bulan", "Tahun" });
-                cmbSatuanUmur.SelectedIndex = 0;
-            }
-        }
+        private void Hewan_Load(object sender, EventArgs e) { }
     }
 }
