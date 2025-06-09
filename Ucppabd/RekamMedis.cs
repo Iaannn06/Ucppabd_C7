@@ -159,6 +159,8 @@ namespace Ucppabd
             }
         }
 
+
+
         private void dataGridViewRekamMedis_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
