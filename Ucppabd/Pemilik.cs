@@ -69,6 +69,8 @@ namespace Ucppabd
             }
         }
 
+
+
         private void btnDelete_Click(object sender, EventArgs e)
         {
             if (dataGridViewPemilik.CurrentRow == null)
