@@ -8,6 +8,7 @@ namespace Ucppabd
     public partial class Vaksin : Form
     {
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+
         public Vaksin()
         {
             InitializeComponent();
@@ -72,6 +73,7 @@ namespace Ucppabd
                 }
             }
         }
+
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
@@ -166,6 +168,9 @@ namespace Ucppabd
             txtTanggalKadaluarsa.Clear();
         }
 
-        private void Vaksin_Load(object sender, EventArgs e) { }
+        private void Vaksin_Load(object sender, EventArgs e)
+        {
+            LoadData();
+        }
     }
 }
