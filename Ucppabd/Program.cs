@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Praktikum7;
 
 namespace Ucppabd
 {
@@ -16,8 +17,8 @@ namespace Ucppabd
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new Maincs()); // atau form lain
+
         }
     }
 }
-

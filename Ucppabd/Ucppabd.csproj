@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.ReportViewer.WinForms, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.ReportViewer.WinForms.v12.12.0.0.1\lib\Microsoft.ReportViewer.WinForms.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -46,6 +49,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataSetReport.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DataSetReport.xsd</DependentUpon>
+    </Compile>
     <Compile Include="Dokter.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -92,6 +100,12 @@
     <Compile Include="RekamMedis.Designer.cs">
       <DependentUpon>RekamMedis.cs</DependentUpon>
     </Compile>
+    <Compile Include="reportexportdata.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="reportexportdata.Designer.cs">
+      <DependentUpon>reportexportdata.cs</DependentUpon>
+    </Compile>
     <Compile Include="Vaksin.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -129,9 +143,25 @@
     <EmbeddedResource Include="RekamMedis.resx">
       <DependentUpon>RekamMedis.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="ReportExport.rdlc" />
+    <EmbeddedResource Include="reportexportdata.resx">
+      <DependentUpon>reportexportdata.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Vaksin.resx">
       <DependentUpon>Vaksin.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="DataSetReport.xsc">
+      <DependentUpon>DataSetReport.xsd</DependentUpon>
+    </None>
+    <None Include="DataSetReport.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>DataSetReport.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="DataSetReport.xss">
+      <DependentUpon>DataSetReport.xsd</DependentUpon>
+    </None>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

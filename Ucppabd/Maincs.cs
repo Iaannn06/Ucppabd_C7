@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Praktikum7;
 
 namespace Ucppabd
 {
@@ -65,6 +66,12 @@ namespace Ucppabd
             // Membuat instance baru dari form JanjiTemu dan menampilkannya
             JanjiTemu j = new JanjiTemu();
             j.Show();
+        }
+
+        private void btnLaporan_Click(object sender, EventArgs e)
+        {
+            reportexportdata rdd = new reportexportdata();
+            rdd.Show();
         }
     }
 }

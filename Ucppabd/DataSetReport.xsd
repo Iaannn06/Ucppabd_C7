@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="DataSetReport" targetNamespace="http://tempuri.org/DataSetReport.xsd" xmlns:mstns="http://tempuri.org/DataSetReport.xsd" xmlns="http://tempuri.org/DataSetReport.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:msprop="urn:schemas-microsoft-com:xml-msprop" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter" Modifier="AutoLayout, AnsiClass, Class, Public" SchemaSerializationMode="IncludeSchema" xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections>
+          <Connection AppSettingsObjectName="Settings" AppSettingsPropertyName="UCP4ConnectionString" ConnectionStringObject="" IsAppSettingsProperty="true" Modifier="Assembly" Name="UCP4ConnectionString (Settings)" ParameterPrefix="@" PropertyReference="ApplicationSettings.Ucppabd.Properties.Settings.GlobalReference.Default.UCP4ConnectionString" Provider="System.Data.SqlClient" />
+        </Connections>
+        <Tables>
+          <TableAdapter BaseClass="System.ComponentModel.Component" DataAccessorModifier="AutoLayout, AnsiClass, Class, Public" DataAccessorName="DataTable1TableAdapter" GeneratorDataComponentClassName="DataTable1TableAdapter" Name="DataTable1" UserDataComponentName="DataTable1TableAdapter">
+            <MainSource>
+              <DbSource ConnectionRef="UCP4ConnectionString (Settings)" DbObjectType="Unknown" FillMethodModifier="Public" FillMethodName="Fill" GenerateMethods="Both" GenerateShortCommands="false" GeneratorGetMethodName="GetData" GeneratorSourceName="Fill" GetMethodModifier="Public" GetMethodName="GetData" QueryType="Rowset" ScalarCallRetval="System.Object, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" UseOptimisticConcurrency="true" UserGetMethodName="GetData" UserSourceName="Fill">
+                <SelectCommand>
+                  <DbCommand CommandType="Text" ModifiedByUser="true">
+                    <CommandText>SELECT Pemilik.ID_Pemilik, Hewan.ID_Hewan, Pemilik.Nama AS NamaPemilik, Hewan.Nama AS NamaHewan, Hewan.Jenis, Pemilik.Telepon, Dokter.ID AS ID_Dokter, Dokter.Nama AS NamaDokter, Dokter.Spesialisasi, JanjiTemu.Tanggal
+FROM     Pemilik INNER JOIN
+                  Hewan ON Pemilik.ID_Pemilik = Hewan.ID_Pemilik INNER JOIN
+                  JanjiTemu ON Hewan.ID_Hewan = JanjiTemu.ID_Hewan INNER JOIN
+                  Dokter ON JanjiTemu.ID_Dokter = Dokter.ID</CommandText>
+                    <Parameters />
+                  </DbCommand>
+                </SelectCommand>
+              </DbSource>
+            </MainSource>
+            <Mappings>
+              <Mapping SourceColumn="ID_Pemilik" DataSetColumn="ID_Pemilik" />
+              <Mapping SourceColumn="ID_Hewan" DataSetColumn="ID_Hewan" />
+              <Mapping SourceColumn="NamaPemilik" DataSetColumn="NamaPemilik" />
+              <Mapping SourceColumn="NamaHewan" DataSetColumn="NamaHewan" />
+              <Mapping SourceColumn="Jenis" DataSetColumn="Jenis" />
+              <Mapping SourceColumn="Telepon" DataSetColumn="Telepon" />
+              <Mapping SourceColumn="ID_Dokter" DataSetColumn="ID_Dokter" />
+              <Mapping SourceColumn="NamaDokter" DataSetColumn="NamaDokter" />
+              <Mapping SourceColumn="Spesialisasi" DataSetColumn="Spesialisasi" />
+              <Mapping SourceColumn="Tanggal" DataSetColumn="Tanggal" />
+            </Mappings>
+            <Sources />
+          </TableAdapter>
+        </Tables>
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <xs:element name="DataSetReport" msdata:IsDataSet="true" msdata:UseCurrentLocale="true" msprop:EnableTableAdapterManager="true" msprop:Generator_UserDSName="DataSetReport" msprop:Generator_DataSetName="DataSetReport">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="DataTable1" msprop:Generator_RowEvHandlerName="DataTable1RowChangeEventHandler" msprop:Generator_RowDeletedName="DataTable1RowDeleted" msprop:Generator_RowDeletingName="DataTable1RowDeleting" msprop:Generator_RowEvArgName="DataTable1RowChangeEvent" msprop:Generator_TablePropName="DataTable1" msprop:Generator_RowChangedName="DataTable1RowChanged" msprop:Generator_RowChangingName="DataTable1RowChanging" msprop:Generator_TableClassName="DataTable1DataTable" msprop:Generator_RowClassName="DataTable1Row" msprop:Generator_TableVarName="tableDataTable1" msprop:Generator_UserTableName="DataTable1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ID_Pemilik" msprop:Generator_ColumnPropNameInRow="ID_Pemilik" msprop:Generator_ColumnPropNameInTable="ID_PemilikColumn" msprop:Generator_ColumnVarNameInTable="columnID_Pemilik" msprop:Generator_UserColumnName="ID_Pemilik">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="5" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="ID_Hewan" msprop:Generator_ColumnPropNameInRow="ID_Hewan" msprop:Generator_ColumnPropNameInTable="ID_HewanColumn" msprop:Generator_ColumnVarNameInTable="columnID_Hewan" msprop:Generator_UserColumnName="ID_Hewan">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="6" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="NamaPemilik" msprop:Generator_ColumnPropNameInRow="NamaPemilik" msprop:Generator_ColumnPropNameInTable="NamaPemilikColumn" msprop:Generator_ColumnVarNameInTable="columnNamaPemilik" msprop:Generator_UserColumnName="NamaPemilik" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="NamaHewan" msprop:Generator_ColumnPropNameInRow="NamaHewan" msprop:Generator_ColumnPropNameInTable="NamaHewanColumn" msprop:Generator_ColumnVarNameInTable="columnNamaHewan" msprop:Generator_UserColumnName="NamaHewan" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Jenis" msprop:Generator_ColumnPropNameInRow="Jenis" msprop:Generator_ColumnPropNameInTable="JenisColumn" msprop:Generator_ColumnVarNameInTable="columnJenis" msprop:Generator_UserColumnName="Jenis" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Telepon" msprop:Generator_ColumnPropNameInRow="Telepon" msprop:Generator_ColumnPropNameInTable="TeleponColumn" msprop:Generator_ColumnVarNameInTable="columnTelepon" msprop:Generator_UserColumnName="Telepon" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="12" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="ID_Dokter" msprop:Generator_ColumnPropNameInRow="ID_Dokter" msprop:Generator_ColumnPropNameInTable="ID_DokterColumn" msprop:Generator_ColumnVarNameInTable="columnID_Dokter" msprop:Generator_UserColumnName="ID_Dokter">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="7" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="NamaDokter" msprop:Generator_ColumnPropNameInRow="NamaDokter" msprop:Generator_ColumnPropNameInTable="NamaDokterColumn" msprop:Generator_ColumnVarNameInTable="columnNamaDokter" msprop:Generator_UserColumnName="NamaDokter" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="100" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Spesialisasi" msprop:Generator_ColumnPropNameInRow="Spesialisasi" msprop:Generator_ColumnPropNameInTable="SpesialisasiColumn" msprop:Generator_ColumnVarNameInTable="columnSpesialisasi" msprop:Generator_UserColumnName="Spesialisasi" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="25" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="Tanggal" msprop:Generator_ColumnPropNameInRow="Tanggal" msprop:Generator_ColumnPropNameInTable="TanggalColumn" msprop:Generator_ColumnVarNameInTable="columnTanggal" msprop:Generator_UserColumnName="Tanggal" type="xs:dateTime" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
