@@ -105,6 +105,8 @@ namespace Ucppabd
             }
         }
 
+
+
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             if (dataGridViewDokter.CurrentRow == null)
