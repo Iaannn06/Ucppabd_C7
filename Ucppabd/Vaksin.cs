@@ -51,10 +51,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("AddVaksin", con))
+                    using (SqlCommand cmd = new SqlCommand("AddVaksin", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
@@ -62,55 +63,19 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@TanggalKadaluarsa", tanggalKadaluarsa);
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data vaksin berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data vaksin berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
-
-
-        private void btnDelete_Click(object sender, EventArgs e)
-        {
-            if (dataGridViewVaksin.CurrentRow == null)
-            {
-                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var confirm = MessageBox.Show("Yakin ingin menghapus data Vaksin ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
-            {
-                string id = dataGridViewVaksin.CurrentRow.Cells["ID_Vaksin"].Value.ToString();
-
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    try
-                    {
-                        con.Open();
-                        using (SqlCommand cmd = new SqlCommand("DeleteVaksin", con))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID_Vaksin", id);
-                            cmd.ExecuteNonQuery();
-                            MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadData();
-                            ClearForm();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-        
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
@@ -128,10 +93,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("UpdateVaksin", con))
+                    using (SqlCommand cmd = new SqlCommand("UpdateVaksin", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
@@ -139,14 +105,55 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@TanggalKadaluarsa", tanggalKadaluarsa);
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewVaksin.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show("Yakin ingin menghapus data Vaksin ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
+            {
+                string id = dataGridViewVaksin.CurrentRow.Cells["ID_Vaksin"].Value.ToString();
+
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    con.Open();
+                    SqlTransaction transaction = con.BeginTransaction();
+                    try
+                    {
+                        using (SqlCommand cmd = new SqlCommand("DeleteVaksin", con, transaction))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID_Vaksin", id);
+                            cmd.ExecuteNonQuery();
+                        }
+                        transaction.Commit();
+                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }

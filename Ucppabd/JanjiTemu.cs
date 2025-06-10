@@ -53,10 +53,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("AddJanjiTemu", con))
+                    using (SqlCommand cmd = new SqlCommand("AddJanjiTemu", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_JanjiTemu", txtIDJanjiTemu.Text.Trim());
@@ -65,61 +66,24 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@Tanggal", tanggal);
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Janji Temu berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Janji Temu berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (SqlException ex)
                 {
-                    // Menangkap error dari RAISERROR di Stored Procedure
+                    transaction.Rollback();
                     MessageBox.Show(ex.Message, "Kesalahan Validasi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Terjadi kesalahan: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
-
-
-        private void btnDelete_Click(object sender, EventArgs e)
-        {
-            if (dataGridViewJanjiTemu.CurrentRow == null)
-            {
-                MessageBox.Show("Pilih data janji temu yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var confirm = MessageBox.Show("Yakin ingin menghapus janji temu ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
-            {
-                string id = dataGridViewJanjiTemu.CurrentRow.Cells["ID_JanjiTemu"].Value.ToString();
-
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    try
-                    {
-                        con.Open();
-                        using (SqlCommand cmd = new SqlCommand("DeleteJanjiTemu", con))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID_JanjiTemu", id);
-                            cmd.ExecuteNonQuery();
-                            MessageBox.Show("Data berhasil dihapus!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadData();
-                            ClearForm();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
@@ -137,10 +101,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("UpdateJanjiTemu", con))
+                    using (SqlCommand cmd = new SqlCommand("UpdateJanjiTemu", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_JanjiTemu", txtIDJanjiTemu.Text.Trim());
@@ -149,14 +114,55 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@Tanggal", tanggal);
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil diperbarui!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data berhasil diperbarui!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewJanjiTemu.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data janji temu yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show("Yakin ingin menghapus janji temu ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
+            {
+                string id = dataGridViewJanjiTemu.CurrentRow.Cells["ID_JanjiTemu"].Value.ToString();
+
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    con.Open();
+                    SqlTransaction transaction = con.BeginTransaction();
+                    try
+                    {
+                        using (SqlCommand cmd = new SqlCommand("DeleteJanjiTemu", con, transaction))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID_JanjiTemu", id);
+                            cmd.ExecuteNonQuery();
+                        }
+                        transaction.Commit();
+                        MessageBox.Show("Data berhasil dihapus!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }

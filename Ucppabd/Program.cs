@@ -17,7 +17,7 @@ namespace Ucppabd
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Maincs()); // atau form lain
+            Application.Run(new Form1()); // atau form lain
 
         }
     }

@@ -60,10 +60,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("AddHewan", con))
+                    using (SqlCommand cmd = new SqlCommand("AddHewan", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
@@ -75,13 +76,15 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data hewan berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data hewan berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -102,22 +105,25 @@ namespace Ucppabd
 
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
+                    con.Open();
+                    SqlTransaction transaction = con.BeginTransaction();
                     try
                     {
-                        con.Open();
-                        using (SqlCommand cmd = new SqlCommand("DeleteHewan", con))
+                        using (SqlCommand cmd = new SqlCommand("DeleteHewan", con, transaction))
                         {
                             cmd.CommandType = CommandType.StoredProcedure;
                             cmd.Parameters.AddWithValue("@ID_Hewan", id);
 
                             cmd.ExecuteNonQuery();
-                            MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadData();
-                            ClearForm();
                         }
+                        transaction.Commit();
+                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
                     }
                     catch (Exception ex)
                     {
+                        transaction.Rollback();
                         MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
@@ -142,10 +148,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("UpdateHewan", con))
+                    using (SqlCommand cmd = new SqlCommand("UpdateHewan", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
 
@@ -157,17 +164,20 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
+
 
         private void dataGridViewHewan_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {

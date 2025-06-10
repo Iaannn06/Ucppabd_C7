@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace Ucppabd
@@ -20,51 +21,111 @@ namespace Ucppabd
         {
             try
             {
-                using (SqlConnection con = new SqlConnection(connectionString))
+                using (var con = new SqlConnection(connectionString))
+                using (var cmd = new SqlCommand("GetAllDokter", con))
                 {
-                    string query = "SELECT ID, Nama, Spesialisasi, Telepon FROM Dokter";
-                    SqlDataAdapter da = new SqlDataAdapter(query, con);
-                    DataTable dt = new DataTable();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    var da = new SqlDataAdapter(cmd);
+                    var dt = new DataTable();
                     da.Fill(dt);
                     dataGridViewDokter.DataSource = dt;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Gagal memuat data: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error memuat data: " + ex.Message);
             }
+        }
+
+        private bool ValidasiInput()
+        {
+            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
+            {
+                MessageBox.Show("ID dan Nama wajib diisi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+                
+            if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s]+$"))
+            {
+                MessageBox.Show("Nama hanya boleh mengandung huruf dan spasi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (!Regex.IsMatch(txtTelepon.Text, "^\\d{10,13}$"))
+            {
+                MessageBox.Show("Nomor telepon harus berupa angka 10-13 digit.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
         }
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
-            {
-                MessageBox.Show("ID dan Nama Dokter wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (!ValidasiInput()) return;
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+
+
+            using (var con = new SqlConnection(connectionString))
             {
-                try
+                con.Open();
+                using (var tx = con.BeginTransaction())
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("AddDokter", con))
+                    try
                     {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
-
-                        cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data dokter berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        using (var cmd = new SqlCommand("AddDokter", con, tx))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
+                            cmd.ExecuteNonQuery();
+                        }
+                        tx.Commit();
+                        MessageBox.Show("Data dokter berhasil ditambahkan.");
                         LoadData();
                         ClearForm();
                     }
+                    catch (Exception ex)
+                    {
+                        tx.Rollback();
+                        MessageBox.Show("Gagal menambahkan data: " + ex.Message);
+                    }
                 }
-                catch (Exception ex)
+            }
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (!ValidasiInput()) return;
+
+            using (var con = new SqlConnection(connectionString))
+            {
+                con.Open();
+                using (var tx = con.BeginTransaction())
                 {
-                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    try
+                    {
+                        using (var cmd = new SqlCommand("UpdateDokter", con, tx))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
+                            cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
+                            cmd.ExecuteNonQuery();
+                        }
+                        tx.Commit();
+                        MessageBox.Show("Data berhasil diperbarui.");
+                        LoadData();
+                        ClearForm();
+                    }
+                    catch (Exception ex)
+                    {
+                        tx.Rollback();
+                        MessageBox.Show("Gagal memperbarui data: " + ex.Message);
+                    }
                 }
             }
         }
@@ -73,85 +134,50 @@ namespace Ucppabd
         {
             if (dataGridViewDokter.CurrentRow == null)
             {
-                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Pilih data yang akan dihapus.");
                 return;
             }
 
-            var confirm = MessageBox.Show("Yakin ingin menghapus data Dokter ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
-            {
-                string id = dataGridViewDokter.CurrentRow.Cells["ID"].Value.ToString();
+            var result = MessageBox.Show("Yakin ingin menghapus data ini?", "Konfirmasi", MessageBoxButtons.YesNo);
+            if (result != DialogResult.Yes) return;
 
-                using (SqlConnection con = new SqlConnection(connectionString))
+            string id = dataGridViewDokter.CurrentRow.Cells["ID"].Value.ToString();
+
+            using (var con = new SqlConnection(connectionString))
+            {
+                con.Open();
+                using (var tx = con.BeginTransaction())
                 {
                     try
                     {
-                        con.Open();
-                        using (SqlCommand cmd = new SqlCommand("DeleteDokter", con))
+                        using (var cmd = new SqlCommand("DeleteDokter", con, tx))
                         {
                             cmd.CommandType = CommandType.StoredProcedure;
                             cmd.Parameters.AddWithValue("@ID", id);
                             cmd.ExecuteNonQuery();
-                            MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadData();
-                            ClearForm();
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-
-
-        private void btnUpdate_Click(object sender, EventArgs e)
-        {
-            if (dataGridViewDokter.CurrentRow == null)
-            {
-                MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            using (SqlConnection con = new SqlConnection(connectionString))
-            {
-                try
-                {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("UpdateDokter", con))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
-
-                        cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        tx.Commit();
+                        MessageBox.Show("Data berhasil dihapus.");
                         LoadData();
                         ClearForm();
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    catch (Exception ex)
+                    {
+                        tx.Rollback();
+                        MessageBox.Show("Gagal menghapus data: " + ex.Message);
+                    }
                 }
             }
         }
 
-
         private void dataGridViewDokter_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0)
-            {
-                DataGridViewRow row = dataGridViewDokter.Rows[e.RowIndex];
-                txtID.Text = row.Cells["ID"].Value.ToString();
-                txtNama.Text = row.Cells["Nama"].Value.ToString();
-                txtSpesialisasi.Text = row.Cells["Spesialisasi"].Value.ToString();
-                txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
-            }
+            if (e.RowIndex < 0) return;
+            var row = dataGridViewDokter.Rows[e.RowIndex];
+            txtID.Text = row.Cells["ID"].Value.ToString();
+            txtNama.Text = row.Cells["Nama"].Value.ToString();
+            txtSpesialisasi.Text = row.Cells["Spesialisasi"].Value.ToString();
+            txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
         }
 
         private void ClearForm()
@@ -165,6 +191,3 @@ namespace Ucppabd
         private void Dokter_Load(object sender, EventArgs e) { }
     }
 }
-
-
-

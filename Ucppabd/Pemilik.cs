@@ -45,10 +45,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("AddPemilik", con))
+                    using (SqlCommand cmd = new SqlCommand("AddPemilik", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
@@ -57,19 +58,19 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data pemilik berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data pemilik berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
-
-
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
@@ -86,27 +87,29 @@ namespace Ucppabd
 
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
+                    con.Open();
+                    SqlTransaction transaction = con.BeginTransaction();
                     try
                     {
-                        con.Open();
-                        using (SqlCommand cmd = new SqlCommand("DeletePemilik", con))
+                        using (SqlCommand cmd = new SqlCommand("DeletePemilik", con, transaction))
                         {
                             cmd.CommandType = CommandType.StoredProcedure;
                             cmd.Parameters.AddWithValue("@ID_Pemilik", id);
                             cmd.ExecuteNonQuery();
-                            MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadData();
-                            ClearForm();
                         }
+                        transaction.Commit();
+                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
                     }
                     catch (Exception ex)
                     {
+                        transaction.Rollback();
                         MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
         }
-
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
@@ -118,10 +121,11 @@ namespace Ucppabd
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
+                con.Open();
+                SqlTransaction transaction = con.BeginTransaction();
                 try
                 {
-                    con.Open();
-                    using (SqlCommand cmd = new SqlCommand("UpdatePemilik", con))
+                    using (SqlCommand cmd = new SqlCommand("UpdatePemilik", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
@@ -130,17 +134,20 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
 
                         cmd.ExecuteNonQuery();
-                        MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
                     }
+                    transaction.Commit();
+                    MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
                     MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
+
 
 
         private void DataGridViewPemilik_CellClick(object sender, DataGridViewCellEventArgs e)
