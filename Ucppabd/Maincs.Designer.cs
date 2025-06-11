@@ -13,7 +13,6 @@ namespace Ucppabd
         private Button btnHewan;
         private Button btnPemilik;
         private Button btnJanjiTemu;
-        private Button btnaporan;
     
         protected override void Dispose(bool disposing)
         {
