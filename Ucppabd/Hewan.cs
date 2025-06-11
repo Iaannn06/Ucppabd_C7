@@ -7,7 +7,7 @@ namespace Ucppabd
 {
     public partial class Hewan : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
 
         public Hewan()
         {
@@ -15,11 +15,10 @@ namespace Ucppabd
             LoadData();
             dataGridViewHewan.CellClick += dataGridViewHewan_CellContentClick;
 
-            // Tambahkan isi ComboBox satuan umur
             if (cmbSatuanUmur.Items.Count == 0)
             {
                 cmbSatuanUmur.Items.AddRange(new string[] { "Hari", "Bulan", "Tahun" });
-                cmbSatuanUmur.SelectedIndex = 2; // Default ke "Tahun"
+                cmbSatuanUmur.SelectedIndex = 2;
             }
         }
 
@@ -67,12 +66,11 @@ namespace Ucppabd
                     using (SqlCommand cmd = new SqlCommand("AddHewan", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
                         cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
                         cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
                         cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
                         cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
-                        cmd.Parameters.AddWithValue("@UmurAngka", umurAngka);
+                        cmd.Parameters.AddWithValue("@Umur", umurAngka);
                         cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
 
                         cmd.ExecuteNonQuery();
@@ -113,7 +111,6 @@ namespace Ucppabd
                         {
                             cmd.CommandType = CommandType.StoredProcedure;
                             cmd.Parameters.AddWithValue("@ID_Hewan", id);
-
                             cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
@@ -155,14 +152,12 @@ namespace Ucppabd
                     using (SqlCommand cmd = new SqlCommand("UpdateHewan", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-
                         cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
                         cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
                         cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
                         cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
-                        cmd.Parameters.AddWithValue("@UmurAngka", umurAngka);
+                        cmd.Parameters.AddWithValue("@Umur", umurAngka);
                         cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
-
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
@@ -178,7 +173,6 @@ namespace Ucppabd
             }
         }
 
-
         private void dataGridViewHewan_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
@@ -189,18 +183,15 @@ namespace Ucppabd
                 txtIDPemilik.Text = row.Cells["ID_Pemilik"].Value.ToString();
                 txtNama.Text = row.Cells["Nama"].Value.ToString();
                 txtJenis.Text = row.Cells["Jenis"].Value.ToString();
-
-                // Menggunakan "Umur" sesuai nama kolom di database
                 txtUmur.Text = row.Cells["Umur"].Value.ToString();
 
-                // Cek jika kolom SatuanUmur tidak null
                 if (row.Cells["SatuanUmur"].Value != DBNull.Value)
                 {
                     cmbSatuanUmur.SelectedItem = row.Cells["SatuanUmur"].Value.ToString();
                 }
                 else
                 {
-                    cmbSatuanUmur.SelectedIndex = 2; // Default "Tahun"
+                    cmbSatuanUmur.SelectedIndex = 2;
                 }
             }
         }

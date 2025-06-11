@@ -7,7 +7,8 @@ namespace Ucppabd
 {
     public partial class Vaksin : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
+        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
 
         public Vaksin()
         {
@@ -22,11 +23,15 @@ namespace Ucppabd
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    string query = "SELECT ID_Vaksin, NamaVaksin, TanggalKadaluarsa FROM Vaksin";
-                    SqlDataAdapter da = new SqlDataAdapter(query, con);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-                    dataGridViewVaksin.DataSource = dt;
+                    // Menggunakan Stored Procedure untuk konsistensi
+                    using (SqlCommand cmd = new SqlCommand("GetAllVaksin", con))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        dataGridViewVaksin.DataSource = dt;
+                    }
                 }
             }
             catch (Exception ex)
@@ -183,4 +188,3 @@ namespace Ucppabd
         }
     }
 }
-

@@ -7,7 +7,8 @@ namespace Ucppabd
 {
     public partial class RekamMedis : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
+        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
 
         public RekamMedis()
         {
@@ -21,6 +22,7 @@ namespace Ucppabd
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
+                // Anda perlu membuat Stored Procedure 'GetAllRekamMedis' di SQL
                 using (SqlCommand cmd = new SqlCommand("GetAllRekamMedis", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -38,9 +40,9 @@ namespace Ucppabd
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtIDHewan.Text))
+            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtIDHewan.Text) || string.IsNullOrWhiteSpace(txtIDVaksin.Text))
             {
-                MessageBox.Show("ID dan ID Hewan wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ID, ID Hewan, dan ID Vaksin wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (!DateTime.TryParse(txtTanggal.Text, out DateTime tanggal))
@@ -60,10 +62,7 @@ namespace Ucppabd
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
                         cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
-                        cmd.Parameters.AddWithValue("@ID_Vaksin",
-                            string.IsNullOrWhiteSpace(txtIDVaksin.Text)
-                            ? (object)DBNull.Value
-                            : txtIDVaksin.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
                         cmd.Parameters.AddWithValue("@Keterangan", txtKeterangan.Text.Trim());
                         cmd.Parameters.AddWithValue("@Tanggal", tanggal);
                         cmd.ExecuteNonQuery();
@@ -142,10 +141,7 @@ namespace Ucppabd
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
                         cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
-                        cmd.Parameters.AddWithValue("@ID_Vaksin",
-                            string.IsNullOrWhiteSpace(txtIDVaksin.Text)
-                            ? (object)DBNull.Value
-                            : txtIDVaksin.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
                         cmd.Parameters.AddWithValue("@Keterangan", txtKeterangan.Text.Trim());
                         cmd.Parameters.AddWithValue("@Tanggal", tanggal);
                         cmd.ExecuteNonQuery();

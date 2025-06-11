@@ -7,7 +7,8 @@ namespace Ucppabd
 {
     public partial class JanjiTemu : Form
     {
-        private string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
+        private string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
 
         public JanjiTemu()
         {

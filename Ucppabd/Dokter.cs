@@ -8,7 +8,8 @@ namespace Ucppabd
 {
     public partial class Dokter : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=UCP4;Integrated Security=True";
+        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
+        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
 
         public Dokter()
         {
@@ -44,10 +45,10 @@ namespace Ucppabd
                 MessageBox.Show("ID dan Nama wajib diisi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-                
-            if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s]+$"))
+
+            if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s.-]+$")) // Ditambah . dan - untuk nama seperti Dr. atau nama dengan strip
             {
-                MessageBox.Show("Nama hanya boleh mengandung huruf dan spasi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Nama hanya boleh mengandung huruf, spasi, titik, dan strip.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
 
@@ -63,8 +64,6 @@ namespace Ucppabd
         private void btnTambah_Click(object sender, EventArgs e)
         {
             if (!ValidasiInput()) return;
-
-
 
             using (var con = new SqlConnection(connectionString))
             {
@@ -138,7 +137,7 @@ namespace Ucppabd
                 return;
             }
 
-            var result = MessageBox.Show("Yakin ingin menghapus data ini?", "Konfirmasi", MessageBoxButtons.YesNo);
+            var result = MessageBox.Show("Yakin ingin menghapus data ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (result != DialogResult.Yes) return;
 
             string id = dataGridViewDokter.CurrentRow.Cells["ID"].Value.ToString();
