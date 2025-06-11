@@ -7,8 +7,10 @@ namespace Ucppabd
 {
     public partial class JanjiTemu : Form
     {
-        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
         private string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        private DataTable _janjiTemuCache = null;
+        private DateTime _cacheTime;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public JanjiTemu()
         {
@@ -19,16 +21,23 @@ namespace Ucppabd
 
         private void LoadData()
         {
+            if (_janjiTemuCache != null && (DateTime.Now - _cacheTime) < _cacheDuration)
+            {
+                dataGridViewJanjiTemu.DataSource = _janjiTemuCache;
+                return;
+            }
+
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    // Menggunakan View_JanjiTemuDetail untuk data yang lebih mudah dibaca
                     string query = "SELECT ID_JanjiTemu, NamaHewan, NamaPemilik, NamaDokter, Tanggal FROM View_JanjiTemuDetail";
                     SqlDataAdapter da = new SqlDataAdapter(query, con);
                     DataTable dt = new DataTable();
                     da.Fill(dt);
-                    dataGridViewJanjiTemu.DataSource = dt;
+                    _janjiTemuCache = dt;
+                    _cacheTime = DateTime.Now;
+                    dataGridViewJanjiTemu.DataSource = _janjiTemuCache;
                 }
             }
             catch (Exception ex)
@@ -36,7 +45,6 @@ namespace Ucppabd
                 MessageBox.Show("Gagal memuat data: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
@@ -69,6 +77,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _janjiTemuCache = null;
                     MessageBox.Show("Janji Temu berhasil ditambahkan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -117,6 +126,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _janjiTemuCache = null;
                     MessageBox.Show("Data berhasil diperbarui!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -155,6 +165,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
+                        _janjiTemuCache = null;
                         MessageBox.Show("Data berhasil dihapus!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadData();
                         ClearForm();
@@ -168,20 +179,14 @@ namespace Ucppabd
             }
         }
 
-
         private void dataGridViewJanjiTemu_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
-                // Mengisi data ke textbox. Karena data grid view sudah detail,
-                // kita perlu mengambil ID dari sumber data aslinya (DataTable)
-                // atau cukup mengisi ID JanjiTemu saja untuk operasi update/delete.
                 DataGridViewRow row = dataGridViewJanjiTemu.Rows[e.RowIndex];
                 txtIDJanjiTemu.Text = row.Cells["ID_JanjiTemu"].Value.ToString();
                 txtTanggal.Text = Convert.ToDateTime(row.Cells["Tanggal"].Value).ToString("yyyy-MM-dd");
 
-                // ID Hewan dan Dokter tidak bisa diambil langsung dari view ini
-                // Pengguna harus mengisinya manual jika ingin update
                 txtIDHewan.Clear();
                 txtID.Clear();
             }

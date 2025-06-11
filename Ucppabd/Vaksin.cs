@@ -7,8 +7,10 @@ namespace Ucppabd
 {
     public partial class Vaksin : Form
     {
-        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        private DataTable _vaksinCache = null;
+        private DateTime _cacheTime;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public Vaksin()
         {
@@ -19,19 +21,24 @@ namespace Ucppabd
 
         private void LoadData()
         {
+            if (_vaksinCache != null && (DateTime.Now - _cacheTime) < _cacheDuration)
+            {
+                dataGridViewVaksin.DataSource = _vaksinCache;
+                return;
+            }
+
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand("GetAllVaksin", con))
                 {
-                    // Menggunakan Stored Procedure untuk konsistensi
-                    using (SqlCommand cmd = new SqlCommand("GetAllVaksin", con))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        dataGridViewVaksin.DataSource = dt;
-                    }
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+                    _vaksinCache = dt;
+                    _cacheTime = DateTime.Now;
+                    dataGridViewVaksin.DataSource = _vaksinCache;
                 }
             }
             catch (Exception ex)
@@ -50,7 +57,7 @@ namespace Ucppabd
 
             if (!DateTime.TryParse(txtTanggalKadaluarsa.Text, out DateTime tanggalKadaluarsa))
             {
-                MessageBox.Show("Format tanggal tidak valid. Harap masukkan format yang benar (contoh: 2026-05-10).", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Format tanggal tidak valid.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -66,10 +73,10 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
                         cmd.Parameters.AddWithValue("@NamaVaksin", txtNamaVaksin.Text.Trim());
                         cmd.Parameters.AddWithValue("@TanggalKadaluarsa", tanggalKadaluarsa);
-
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _vaksinCache = null;
                     MessageBox.Show("Data vaksin berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -92,7 +99,7 @@ namespace Ucppabd
 
             if (!DateTime.TryParse(txtTanggalKadaluarsa.Text, out DateTime tanggalKadaluarsa))
             {
-                MessageBox.Show("Format tanggal tidak valid. Harap masukkan format yang benar (contoh: 2026-05-10).", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Format tanggal tidak valid.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -108,10 +115,10 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
                         cmd.Parameters.AddWithValue("@NamaVaksin", txtNamaVaksin.Text.Trim());
                         cmd.Parameters.AddWithValue("@TanggalKadaluarsa", tanggalKadaluarsa);
-
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _vaksinCache = null;
                     MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -150,6 +157,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
+                        _vaksinCache = null;
                         MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadData();
                         ClearForm();
@@ -162,7 +170,6 @@ namespace Ucppabd
                 }
             }
         }
-
 
         private void dataGridViewVaksin_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {

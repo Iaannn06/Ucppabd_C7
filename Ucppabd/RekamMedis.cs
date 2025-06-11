@@ -7,8 +7,10 @@ namespace Ucppabd
 {
     public partial class RekamMedis : Form
     {
-        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        private DataTable _rekamCache = null;
+        private DateTime _cacheTime;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public RekamMedis()
         {
@@ -19,17 +21,24 @@ namespace Ucppabd
 
         private void LoadData()
         {
+            if (_rekamCache != null && (DateTime.Now - _cacheTime) < _cacheDuration)
+            {
+                dataGridViewRekamMedis.DataSource = _rekamCache;
+                return;
+            }
+
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
-                // Anda perlu membuat Stored Procedure 'GetAllRekamMedis' di SQL
                 using (SqlCommand cmd = new SqlCommand("GetAllRekamMedis", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     SqlDataAdapter da = new SqlDataAdapter(cmd);
                     DataTable dt = new DataTable();
                     da.Fill(dt);
-                    dataGridViewRekamMedis.DataSource = dt;
+                    _rekamCache = dt;
+                    _cacheTime = DateTime.Now;
+                    dataGridViewRekamMedis.DataSource = _rekamCache;
                 }
             }
             catch (Exception ex)
@@ -68,6 +77,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _rekamCache = null;
                     MessageBox.Show("Data berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -88,8 +98,7 @@ namespace Ucppabd
                 return;
             }
             string id = dataGridViewRekamMedis.CurrentRow.Cells["ID"].Value.ToString();
-            if (MessageBox.Show("Yakin ingin menghapus?", "Konfirmasi",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (MessageBox.Show("Yakin ingin menghapus?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -105,6 +114,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _rekamCache = null;
                     MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -147,6 +157,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _rekamCache = null;
                     MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();

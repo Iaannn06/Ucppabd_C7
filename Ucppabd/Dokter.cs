@@ -8,8 +8,11 @@ namespace Ucppabd
 {
     public partial class Dokter : Form
     {
-        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+
+        private DataTable _dokterCache = null;
+        private DateTime _cacheTime;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public Dokter()
         {
@@ -20,6 +23,12 @@ namespace Ucppabd
 
         private void LoadData()
         {
+            if (_dokterCache != null && (DateTime.Now - _cacheTime) < _cacheDuration)
+            {
+                dataGridViewDokter.DataSource = _dokterCache;
+                return;
+            }
+
             try
             {
                 using (var con = new SqlConnection(connectionString))
@@ -29,7 +38,9 @@ namespace Ucppabd
                     var da = new SqlDataAdapter(cmd);
                     var dt = new DataTable();
                     da.Fill(dt);
-                    dataGridViewDokter.DataSource = dt;
+                    _dokterCache = dt;
+                    _cacheTime = DateTime.Now;
+                    dataGridViewDokter.DataSource = _dokterCache;
                 }
             }
             catch (Exception ex)
@@ -46,7 +57,7 @@ namespace Ucppabd
                 return false;
             }
 
-            if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s.-]+$")) // Ditambah . dan - untuk nama seperti Dr. atau nama dengan strip
+            if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s.-]+$"))
             {
                 MessageBox.Show("Nama hanya boleh mengandung huruf, spasi, titik, dan strip.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
@@ -82,6 +93,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         tx.Commit();
+                        _dokterCache = null;
                         MessageBox.Show("Data dokter berhasil ditambahkan.");
                         LoadData();
                         ClearForm();
@@ -116,6 +128,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         tx.Commit();
+                        _dokterCache = null;
                         MessageBox.Show("Data berhasil diperbarui.");
                         LoadData();
                         ClearForm();
@@ -156,6 +169,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         tx.Commit();
+                        _dokterCache = null;
                         MessageBox.Show("Data berhasil dihapus.");
                         LoadData();
                         ClearForm();

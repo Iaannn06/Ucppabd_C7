@@ -8,6 +8,9 @@ namespace Ucppabd
     public partial class Hewan : Form
     {
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        private DataTable _hewanCache = null;
+        private DateTime _cacheTime;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public Hewan()
         {
@@ -24,6 +27,12 @@ namespace Ucppabd
 
         private void LoadData()
         {
+            if (_hewanCache != null && (DateTime.Now - _cacheTime) < _cacheDuration)
+            {
+                dataGridViewHewan.DataSource = _hewanCache;
+                return;
+            }
+
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
@@ -32,7 +41,9 @@ namespace Ucppabd
                     SqlDataAdapter da = new SqlDataAdapter(query, con);
                     DataTable dt = new DataTable();
                     da.Fill(dt);
-                    dataGridViewHewan.DataSource = dt;
+                    _hewanCache = dt;
+                    _cacheTime = DateTime.Now;
+                    dataGridViewHewan.DataSource = _hewanCache;
                 }
             }
             catch (Exception ex)
@@ -76,6 +87,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _hewanCache = null;
                     MessageBox.Show("Data hewan berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -114,6 +126,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
+                        _hewanCache = null;
                         MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadData();
                         ClearForm();
@@ -161,6 +174,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _hewanCache = null;
                     MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -209,3 +223,4 @@ namespace Ucppabd
         private void Hewan_Load(object sender, EventArgs e) { }
     }
 }
+

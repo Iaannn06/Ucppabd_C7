@@ -7,8 +7,11 @@ namespace Ucppabd
 {
     public partial class Pemilik : Form
     {
-        // Perubahan disini: Initial Catalog diubah menjadi ProjecctPABD
         static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+
+        private DataTable _pemilikCache = null;
+        private DateTime _cacheTime;
+        private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
 
         public Pemilik()
         {
@@ -19,18 +22,25 @@ namespace Ucppabd
 
         private void LoadData()
         {
+            if (_pemilikCache != null && (DateTime.Now - _cacheTime) < _cacheDuration)
+            {
+                dataGridViewPemilik.DataSource = _pemilikCache;
+                return;
+            }
+
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    // Menggunakan Stored Procedure untuk konsistensi
                     using (SqlCommand cmd = new SqlCommand("GetAllPemilik", con))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
                         DataTable dt = new DataTable();
                         da.Fill(dt);
-                        dataGridViewPemilik.DataSource = dt;
+                        _pemilikCache = dt;
+                        _cacheTime = DateTime.Now;
+                        dataGridViewPemilik.DataSource = _pemilikCache;
                     }
                 }
             }
@@ -65,6 +75,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _pemilikCache = null;
                     MessageBox.Show("Data pemilik berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -103,6 +114,7 @@ namespace Ucppabd
                             cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
+                        _pemilikCache = null;
                         MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         LoadData();
                         ClearForm();
@@ -141,6 +153,7 @@ namespace Ucppabd
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
+                    _pemilikCache = null;
                     MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
@@ -152,8 +165,6 @@ namespace Ucppabd
                 }
             }
         }
-
-
 
         private void DataGridViewPemilik_CellClick(object sender, DataGridViewCellEventArgs e)
         {
