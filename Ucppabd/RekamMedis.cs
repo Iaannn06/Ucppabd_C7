@@ -189,5 +189,10 @@ namespace Ucppabd
             txtKeterangan.Clear();
             txtTanggal.Clear();
         }
+
+        private void RekamMedis_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

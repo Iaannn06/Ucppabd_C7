@@ -204,6 +204,7 @@
             this.Controls.Add(this.label1);
             this.Name = "RekamMedis";
             this.Text = "RekamMedis";
+            this.Load += new System.EventHandler(this.RekamMedis_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewRekamMedis)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

@@ -183,6 +183,7 @@
             this.Controls.Add(this.label1);
             this.Name = "JanjiTemu";
             this.Text = "JanjiTemu";
+            this.Load += new System.EventHandler(this.JanjiTemu_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewJanjiTemu)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

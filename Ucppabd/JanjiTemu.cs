@@ -199,5 +199,10 @@ namespace Ucppabd
             txtID.Clear();
             txtTanggal.Clear();
         }
+
+        private void JanjiTemu_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }
