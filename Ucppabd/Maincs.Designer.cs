@@ -30,6 +30,7 @@ namespace Ucppabd
             this.btnPemilik = new System.Windows.Forms.Button();
             this.btnJanjiTemu = new System.Windows.Forms.Button();
             this.btnLaporan = new System.Windows.Forms.Button();
+            this.btnTesKoneksi = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnDokter
@@ -94,7 +95,7 @@ namespace Ucppabd
             // 
             // btnLaporan
             // 
-            this.btnLaporan.Location = new System.Drawing.Point(179, 275);
+            this.btnLaporan.Location = new System.Drawing.Point(100, 266);
             this.btnLaporan.Name = "btnLaporan";
             this.btnLaporan.Size = new System.Drawing.Size(100, 53);
             this.btnLaporan.TabIndex = 6;
@@ -102,11 +103,22 @@ namespace Ucppabd
             this.btnLaporan.UseVisualStyleBackColor = true;
             this.btnLaporan.Click += new System.EventHandler(this.btnLaporan_Click);
             // 
+            // btnTesKoneksi
+            // 
+            this.btnTesKoneksi.Location = new System.Drawing.Point(260, 273);
+            this.btnTesKoneksi.Name = "btnTesKoneksi";
+            this.btnTesKoneksi.Size = new System.Drawing.Size(100, 46);
+            this.btnTesKoneksi.TabIndex = 7;
+            this.btnTesKoneksi.Text = "Tes Koneksi";
+            this.btnTesKoneksi.UseVisualStyleBackColor = true;
+            this.btnTesKoneksi.Click += new System.EventHandler(this.btnTesKoneksi_Click);
+            // 
             // Maincs
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(450, 360);
+            this.Controls.Add(this.btnTesKoneksi);
             this.Controls.Add(this.btnLaporan);
             this.Controls.Add(this.btnJanjiTemu);
             this.Controls.Add(this.btnPemilik);
@@ -121,5 +133,6 @@ namespace Ucppabd
         }
 
         private Button btnLaporan;
+        private Button btnTesKoneksi;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.SqlClient;
 using System.Windows.Forms;
 
 namespace Ucppabd
@@ -7,9 +8,14 @@ namespace Ucppabd
     // Dari sini, pengguna dapat membuka form-form lain untuk mengelola data.
     public partial class Maincs : Form
     {
+        private Koneksi koneksi = new Koneksi();
+        private string strKonek;
+
         public Maincs()
         {
             InitializeComponent();
+            strKonek = koneksi.connectionString();
+
         }
 
         // Event handler saat tombol Dokter diklik
@@ -68,6 +74,27 @@ namespace Ucppabd
 
             // Menampilkan form tersebut
             formViewer.Show();
+        }
+
+        private void btnTesKoneksi_Click(object sender, EventArgs e)
+        {
+            // Menggunakan connection string yang sudah ada
+            using (var con = new SqlConnection(strKonek))
+            {
+                try
+                {
+                    // Coba buka koneksi
+                    con.Open();
+                    // Jika berhasil, tampilkan pesan sukses
+                    MessageBox.Show("Koneksi ke database berhasil!", "Status: Tersambung", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    // Jika gagal, tampilkan pesan error
+                    MessageBox.Show("Koneksi ke database gagal.\nError: " + ex.Message, "Koneksi Gagal", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                // Koneksi akan otomatis tertutup oleh blok 'using'
+            }
         }
     }
 }
