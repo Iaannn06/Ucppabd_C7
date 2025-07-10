@@ -49,6 +49,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataSetReport.cs">
+      <DependentUpon>DataSetReport.xsd</DependentUpon>
+    </Compile>
     <Compile Include="DataSetReport.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -80,6 +83,7 @@
     <Compile Include="JanjiTemu.Designer.cs">
       <DependentUpon>JanjiTemu.cs</DependentUpon>
     </Compile>
+    <Compile Include="Koneksi.cs" />
     <Compile Include="Maincs.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -100,11 +104,11 @@
     <Compile Include="RekamMedis.Designer.cs">
       <DependentUpon>RekamMedis.cs</DependentUpon>
     </Compile>
-    <Compile Include="reportexportdata.cs">
+    <Compile Include="ReportViewer.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="reportexportdata.Designer.cs">
-      <DependentUpon>reportexportdata.cs</DependentUpon>
+    <Compile Include="ReportViewer.Designer.cs">
+      <DependentUpon>ReportViewer.cs</DependentUpon>
     </Compile>
     <Compile Include="Vaksin.cs">
       <SubType>Form</SubType>
@@ -144,8 +148,8 @@
       <DependentUpon>RekamMedis.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ReportExport.rdlc" />
-    <EmbeddedResource Include="reportexportdata.resx">
-      <DependentUpon>reportexportdata.cs</DependentUpon>
+    <EmbeddedResource Include="ReportViewer.resx">
+      <DependentUpon>ReportViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Vaksin.resx">
       <DependentUpon>Vaksin.cs</DependentUpon>

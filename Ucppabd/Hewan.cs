@@ -7,7 +7,10 @@ namespace Ucppabd
 {
     public partial class Hewan : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        // 1. Membuat instance dari kelas Koneksi dan variabel string koneksi
+        private Koneksi koneksi = new Koneksi();
+        private string strKonek;
+
         private DataTable _hewanCache = null;
         private DateTime _cacheTime;
         private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
@@ -15,8 +18,11 @@ namespace Ucppabd
         public Hewan()
         {
             InitializeComponent();
+
+            strKonek = koneksi.connectionString();
+
             LoadData();
-            dataGridViewHewan.CellClick += dataGridViewHewan_CellContentClick;
+            dataGridViewHewan.CellClick += dataGridViewHewan_CellClick;
 
             if (cmbSatuanUmur.Items.Count == 0)
             {
@@ -35,11 +41,13 @@ namespace Ucppabd
 
             try
             {
-                using (SqlConnection con = new SqlConnection(connectionString))
+                // 3. Menggunakan 'strKonek' dan Stored Procedure 'GetAllHewan'
+                using (var con = new SqlConnection(strKonek))
+                using (var cmd = new SqlCommand("GetAllHewan", con))
                 {
-                    string query = "SELECT ID_Hewan, ID_Pemilik, Nama, Jenis, Umur, SatuanUmur FROM Hewan";
-                    SqlDataAdapter da = new SqlDataAdapter(query, con);
-                    DataTable dt = new DataTable();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    var da = new SqlDataAdapter(cmd);
+                    var dt = new DataTable();
                     da.Fill(dt);
                     _hewanCache = dt;
                     _cacheTime = DateTime.Now;
@@ -52,29 +60,49 @@ namespace Ucppabd
             }
         }
 
+        // --- Sisa kode di bawah ini sudah benar, hanya perlu dipastikan ---
+        // --- mereka menggunakan 'strKonek' untuk koneksi. ---
+
         private void btnTambah_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtIDHewan.Text) || string.IsNullOrWhiteSpace(txtIDPemilik.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
             {
-                MessageBox.Show("ID Hewan, ID Pemilik, dan Nama wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("ID Hewan, ID Pemilik, Nama, Jenis, Dan Umur wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (!int.TryParse(txtUmur.Text, out int umurAngka))
             {
                 MessageBox.Show("Format umur tidak valid. Harap masukkan angka.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s]+$"))
+            {
+                MessageBox.Show("Nama hewan hanya boleh mengandung huruf dan spasi.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string polaNama = "^[a-zA-Z\\s]+$"; // Pola hanya huruf dan spasi
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, polaNama))
+            {
+                MessageBox.Show("Nama hewan hanya boleh mengandung huruf dan spasi.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtJenis.Text, polaNama))
+            {
+                MessageBox.Show("Jenis hewan hanya boleh mengandung huruf dan spasi.", "Validasi Jenis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string satuanUmur = cmbSatuanUmur.SelectedItem.ToString();
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                SqlTransaction transaction = con.BeginTransaction();
+                var transaction = con.BeginTransaction();
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("AddHewan", con, transaction))
+                    using (var cmd = new SqlCommand("AddHewan", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
@@ -83,7 +111,6 @@ namespace Ucppabd
                         cmd.Parameters.AddWithValue("@Jenis", txtJenis.Text.Trim());
                         cmd.Parameters.AddWithValue("@Umur", umurAngka);
                         cmd.Parameters.AddWithValue("@SatuanUmur", satuanUmur);
-
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
@@ -100,46 +127,6 @@ namespace Ucppabd
             }
         }
 
-        private void btnDelete_Click(object sender, EventArgs e)
-        {
-            if (dataGridViewHewan.CurrentRow == null)
-            {
-                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var confirm = MessageBox.Show("Yakin ingin menghapus data hewan ini? Menghapus hewan juga akan menghapus janji temu terkait.", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
-            {
-                string id = dataGridViewHewan.CurrentRow.Cells["ID_Hewan"].Value.ToString();
-
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    con.Open();
-                    SqlTransaction transaction = con.BeginTransaction();
-                    try
-                    {
-                        using (SqlCommand cmd = new SqlCommand("DeleteHewan", con, transaction))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID_Hewan", id);
-                            cmd.ExecuteNonQuery();
-                        }
-                        transaction.Commit();
-                        _hewanCache = null;
-                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
         private void btnUpdate_Click(object sender, EventArgs e)
         {
             if (dataGridViewHewan.CurrentRow == null)
@@ -147,22 +134,40 @@ namespace Ucppabd
                 MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (!int.TryParse(txtUmur.Text, out int umurAngka))
             {
                 MessageBox.Show("Format umur tidak valid. Harap masukkan angka.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s]+$"))
+            {
+                MessageBox.Show("Nama hewan hanya boleh mengandung huruf dan spasi.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string polaNama = "^[a-zA-Z\\s]+$";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtNama.Text, polaNama))
+            {
+                MessageBox.Show("Nama hewan hanya boleh mengandung huruf dan spasi.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtJenis.Text, polaNama))
+            {
+                MessageBox.Show("Jenis hewan hanya boleh mengandung huruf dan spasi.", "Validasi Jenis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+
             string satuanUmur = cmbSatuanUmur.SelectedItem.ToString();
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                SqlTransaction transaction = con.BeginTransaction();
+                var transaction = con.BeginTransaction();
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("UpdateHewan", con, transaction))
+                    using (var cmd = new SqlCommand("UpdateHewan", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Hewan", txtIDHewan.Text.Trim());
@@ -187,26 +192,86 @@ namespace Ucppabd
             }
         }
 
-        private void dataGridViewHewan_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        private void btnDelete_Click(object sender, EventArgs e)
         {
-            if (e.RowIndex >= 0)
+            if (dataGridViewHewan.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("Yakin ingin menghapus data hewan ini? Menghapus hewan juga akan menghapus janji temu dan rekam medis terkait.", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                string id = dataGridViewHewan.CurrentRow.Cells["ID_Hewan"].Value.ToString();
+
+                using (var con = new SqlConnection(strKonek))
+                {
+                    con.Open();
+                    var transaction = con.BeginTransaction();
+                    try
+                    {
+                        using (var cmd = new SqlCommand("DeleteHewan", con, transaction))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.Parameters.AddWithValue("@ID_Hewan", id);
+                            cmd.ExecuteNonQuery();
+                        }
+                        transaction.Commit();
+                        _hewanCache = null;
+                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadData();
+                        ClearForm();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        // DIUBAH: Nama method dan ditambahkan try-catch serta konversi yang lebih aman
+        private void dataGridViewHewan_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Pengecekan agar tidak error saat header diklik
+            if (e.RowIndex < 0) return;
+
+            try
             {
                 DataGridViewRow row = dataGridViewHewan.Rows[e.RowIndex];
 
-                txtIDHewan.Text = row.Cells["ID_Hewan"].Value.ToString();
-                txtIDPemilik.Text = row.Cells["ID_Pemilik"].Value.ToString();
-                txtNama.Text = row.Cells["Nama"].Value.ToString();
-                txtJenis.Text = row.Cells["Jenis"].Value.ToString();
-                txtUmur.Text = row.Cells["Umur"].Value.ToString();
+                // Mengisi textbox lain yang kolomnya sudah pasti ada
+                txtIDHewan.Text = Convert.ToString(row.Cells["ID_Hewan"].Value);
+                txtIDPemilik.Text = Convert.ToString(row.Cells["ID_Pemilik"].Value);
+                txtNama.Text = Convert.ToString(row.Cells["Nama"].Value);
+                txtJenis.Text = Convert.ToString(row.Cells["Jenis"].Value);
+                txtUmur.Text = Convert.ToString(row.Cells["Umur"].Value);
 
-                if (row.Cells["SatuanUmur"].Value != DBNull.Value)
+                // --- PERUBAHAN DI SINI ---
+                // Cek dulu apakah kolom "SatuanUmur" ada di dalam DataGridView
+                if (dataGridViewHewan.Columns.Contains("SatuanUmur"))
                 {
-                    cmbSatuanUmur.SelectedItem = row.Cells["SatuanUmur"].Value.ToString();
+                    // Jika kolomnya ada, baru jalankan kode untuk ComboBox
+                    if (row.Cells["SatuanUmur"].Value != DBNull.Value)
+                    {
+                        cmbSatuanUmur.SelectedItem = Convert.ToString(row.Cells["SatuanUmur"].Value);
+                    }
+                    else
+                    {
+                        cmbSatuanUmur.SelectedIndex = 2; // Default "Tahun"
+                    }
                 }
                 else
                 {
-                    cmbSatuanUmur.SelectedIndex = 2;
+                    // Jika kolom tidak ada sama sekali, cukup atur ComboBox ke nilai default
+                    cmbSatuanUmur.SelectedIndex = 2; // Default "Tahun"
                 }
+            }
+            catch (Exception ex)
+            {
+                // Jika terjadi error tak terduga, tampilkan pesan
+                MessageBox.Show("Terjadi kesalahan saat memilih data: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -220,12 +285,6 @@ namespace Ucppabd
             cmbSatuanUmur.SelectedIndex = 2;
         }
 
-        private void Hewan_Load(object sender, EventArgs e) { }
-
-        private void Hewan_Load_1(object sender, EventArgs e)
-        {
-
-        }
+        private void Hewan_Load_1(object sender, EventArgs e) { }
     }
 }
-

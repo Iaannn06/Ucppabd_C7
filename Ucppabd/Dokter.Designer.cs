@@ -145,11 +145,11 @@
             // dataGridViewDokter
             // 
             this.dataGridViewDokter.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewDokter.Location = new System.Drawing.Point(290, 388);
+            this.dataGridViewDokter.Location = new System.Drawing.Point(262, 389);
             this.dataGridViewDokter.Name = "dataGridViewDokter";
             this.dataGridViewDokter.RowHeadersWidth = 51;
             this.dataGridViewDokter.RowTemplate.Height = 24;
-            this.dataGridViewDokter.Size = new System.Drawing.Size(666, 94);
+            this.dataGridViewDokter.Size = new System.Drawing.Size(755, 129);
             this.dataGridViewDokter.TabIndex = 13;
             this.dataGridViewDokter.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewDokter_CellContentClick);
             // 

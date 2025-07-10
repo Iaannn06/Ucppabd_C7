@@ -146,7 +146,7 @@
             this.dataGridViewHewan.RowTemplate.Height = 24;
             this.dataGridViewHewan.Size = new System.Drawing.Size(412, 150);
             this.dataGridViewHewan.TabIndex = 11;
-            this.dataGridViewHewan.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewHewan_CellContentClick);
+            this.dataGridViewHewan.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewHewan_CellClick);
             // 
             // btnTambah
             // 

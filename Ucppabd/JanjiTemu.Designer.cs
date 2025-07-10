@@ -63,7 +63,7 @@
             this.dataGridViewJanjiTemu.RowTemplate.Height = 24;
             this.dataGridViewJanjiTemu.Size = new System.Drawing.Size(519, 150);
             this.dataGridViewJanjiTemu.TabIndex = 1;
-            this.dataGridViewJanjiTemu.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewJanjiTemu_CellContentClick);
+            this.dataGridViewJanjiTemu.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridViewJanjiTemu_CellClick);
             // 
             // btnTambah
             // 

@@ -8,7 +8,9 @@ namespace Ucppabd
 {
     public partial class Dokter : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        // 1. Membuat instance dari kelas Koneksi dan variabel string koneksi
+        private Koneksi koneksi = new Koneksi();
+        private string strKonek;
 
         private DataTable _dokterCache = null;
         private DateTime _cacheTime;
@@ -17,6 +19,10 @@ namespace Ucppabd
         public Dokter()
         {
             InitializeComponent();
+
+            // 2. Mengambil connection string dari kelas Koneksi
+            strKonek = koneksi.connectionString();
+
             LoadData();
             dataGridViewDokter.CellClick += dataGridViewDokter_CellContentClick;
         }
@@ -28,10 +34,9 @@ namespace Ucppabd
                 dataGridViewDokter.DataSource = _dokterCache;
                 return;
             }
-
             try
             {
-                using (var con = new SqlConnection(connectionString))
+                using (var con = new SqlConnection(strKonek))
                 using (var cmd = new SqlCommand("GetAllDokter", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -51,18 +56,28 @@ namespace Ucppabd
 
         private bool ValidasiInput()
         {
-            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
+            if (string.IsNullOrWhiteSpace(txtID.Text) || string.IsNullOrWhiteSpace(txtNama.Text) || string.IsNullOrWhiteSpace(txtSpesialisasi.Text) || string.IsNullOrWhiteSpace(txtTelepon.Text))
             {
-                MessageBox.Show("ID dan Nama wajib diisi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Semua field wajib diisi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
 
+            // Validasi Nama: Hanya huruf, spasi, titik, dan strip
             if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s.-]+$"))
             {
                 MessageBox.Show("Nama hanya boleh mengandung huruf, spasi, titik, dan strip.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
 
+            // --- VALIDASI BARU ---
+            // Validasi Spesialisasi: Hanya huruf dan spasi
+            if (!Regex.IsMatch(txtSpesialisasi.Text, "^[a-zA-Z\\s]+$"))
+            {
+                MessageBox.Show("Spesialisasi hanya boleh mengandung huruf dan spasi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            // Validasi Telepon: Hanya angka, 10-13 digit
             if (!Regex.IsMatch(txtTelepon.Text, "^\\d{10,13}$"))
             {
                 MessageBox.Show("Nomor telepon harus berupa angka 10-13 digit.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -72,11 +87,14 @@ namespace Ucppabd
             return true;
         }
 
+        // --- Sisa kode (btnTambah, btnUpdate, dll.) tidak diubah ---
+        // --- karena mereka sudah memanggil method ValidasiInput() ---
+
         private void btnTambah_Click(object sender, EventArgs e)
         {
             if (!ValidasiInput()) return;
 
-            using (var con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
                 using (var tx = con.BeginTransaction())
@@ -109,9 +127,14 @@ namespace Ucppabd
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
+            if (dataGridViewDokter.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data yang akan diupdate.");
+                return;
+            }
             if (!ValidasiInput()) return;
 
-            using (var con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
                 using (var tx = con.BeginTransaction())
@@ -149,13 +172,11 @@ namespace Ucppabd
                 MessageBox.Show("Pilih data yang akan dihapus.");
                 return;
             }
-
-            var result = MessageBox.Show("Yakin ingin menghapus data ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result != DialogResult.Yes) return;
+            if (MessageBox.Show("Yakin ingin menghapus data ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
             string id = dataGridViewDokter.CurrentRow.Cells["ID"].Value.ToString();
 
-            using (var con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
                 using (var tx = con.BeginTransaction())
@@ -191,6 +212,7 @@ namespace Ucppabd
             txtNama.Text = row.Cells["Nama"].Value.ToString();
             txtSpesialisasi.Text = row.Cells["Spesialisasi"].Value.ToString();
             txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
+            txtID.ReadOnly = true; // Kunci ID saat update
         }
 
         private void ClearForm()
@@ -199,6 +221,7 @@ namespace Ucppabd
             txtNama.Clear();
             txtSpesialisasi.Clear();
             txtTelepon.Clear();
+            txtID.ReadOnly = false; // Buka kunci ID untuk data baru
         }
 
         private void Dokter_Load(object sender, EventArgs e) { }

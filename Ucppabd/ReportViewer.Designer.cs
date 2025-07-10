@@ -1,9 +1,16 @@
-﻿namespace Praktikum7
+﻿namespace Ucppabd
 {
-    partial class reportexportdata
+    partial class ReportViewer
     {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -15,6 +22,10 @@
 
         #region Windows Form Designer generated code
 
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
         private void InitializeComponent()
         {
             this.reportViewer1 = new Microsoft.Reporting.WinForms.ReportViewer();
@@ -22,21 +33,21 @@
             // 
             // reportViewer1
             // 
-            this.reportViewer1.Location = new System.Drawing.Point(0, -51);
+            this.reportViewer1.LocalReport.ReportEmbeddedResource = "Ucppabd.ReportExport.rdlc";
+            this.reportViewer1.Location = new System.Drawing.Point(0, 17);
             this.reportViewer1.Name = "reportViewer1";
-            this.reportViewer1.Size = new System.Drawing.Size(810, 515);
+            this.reportViewer1.Size = new System.Drawing.Size(1339, 527);
             this.reportViewer1.TabIndex = 0;
-            this.reportViewer1.Load += new System.EventHandler(this.reportViewer1_Load);
             // 
-            // reportexportdata
+            // ReportViewer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1331, 556);
             this.Controls.Add(this.reportViewer1);
-            this.Name = "reportexportdata";
-            this.Text = "Laporan Janji Temu";
-            this.Load += new System.EventHandler(this.reportexportdata_Load);
+            this.Name = "ReportViewer";
+            this.Text = "ReportViewer";
+            this.Load += new System.EventHandler(this.ReportViewer_Load);
             this.ResumeLayout(false);
 
         }

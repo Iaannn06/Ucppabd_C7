@@ -1,13 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Praktikum7;
 
 namespace Ucppabd
 {
@@ -68,10 +60,14 @@ namespace Ucppabd
             j.Show();
         }
 
+        // Event handler saat tombol Laporan diklik
         private void btnLaporan_Click(object sender, EventArgs e)
         {
-            reportexportdata rdd = new reportexportdata();
-            rdd.Show();
+            // Membuat instance dari form ReportViewer Anda
+            ReportViewer formViewer = new ReportViewer();
+
+            // Menampilkan form tersebut
+            formViewer.Show();
         }
     }
 }

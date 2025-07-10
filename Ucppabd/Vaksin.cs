@@ -7,7 +7,10 @@ namespace Ucppabd
 {
     public partial class Vaksin : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        // 1. Membuat instance dari kelas Koneksi dan variabel string koneksi
+        private Koneksi koneksi = new Koneksi();
+        private string strKonek;
+
         private DataTable _vaksinCache = null;
         private DateTime _cacheTime;
         private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
@@ -15,6 +18,10 @@ namespace Ucppabd
         public Vaksin()
         {
             InitializeComponent();
+
+            // 2. Mengambil connection string dari kelas Koneksi
+            strKonek = koneksi.connectionString();
+
             LoadData();
             dataGridViewVaksin.CellClick += dataGridViewVaksin_CellContentClick;
         }
@@ -26,15 +33,14 @@ namespace Ucppabd
                 dataGridViewVaksin.DataSource = _vaksinCache;
                 return;
             }
-
             try
             {
-                using (SqlConnection con = new SqlConnection(connectionString))
-                using (SqlCommand cmd = new SqlCommand("GetAllVaksin", con))
+                using (var con = new SqlConnection(strKonek))
+                using (var cmd = new SqlCommand("GetAllVaksin", con))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
+                    var da = new SqlDataAdapter(cmd);
+                    var dt = new DataTable();
                     da.Fill(dt);
                     _vaksinCache = dt;
                     _cacheTime = DateTime.Now;
@@ -49,25 +55,52 @@ namespace Ucppabd
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtIDVaksin.Text) || string.IsNullOrWhiteSpace(txtNamaVaksin.Text))
+            if (string.IsNullOrWhiteSpace(txtIDVaksin.Text) || string.IsNullOrWhiteSpace(txtNamaVaksin.Text) || string.IsNullOrWhiteSpace(txtTanggalKadaluarsa.Text))
             {
-                MessageBox.Show("ID Vaksin dan Nama Vaksin wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Semua field wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (!DateTime.TryParse(txtTanggalKadaluarsa.Text, out DateTime tanggalKadaluarsa))
             {
                 MessageBox.Show("Format tanggal tidak valid.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (tanggalKadaluarsa.Date <= DateTime.Now.Date)
+            {
+                MessageBox.Show("Tanggal kadaluarsa harus di masa depan.", "Validasi Tanggal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                SqlTransaction transaction = con.BeginTransaction();
+
+                // Validasi duplikat ID dan Nama Vaksin
+                var cmdCekId = new SqlCommand("SELECT COUNT(*) FROM dbo.Vaksin WHERE ID_Vaksin = @ID_Vaksin", con);
+                cmdCekId.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
+                if ((int)cmdCekId.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("ID Vaksin sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var cmdCekNama = new SqlCommand("SELECT COUNT(*) FROM dbo.Vaksin WHERE NamaVaksin = @NamaVaksin", con);
+                cmdCekNama.Parameters.AddWithValue("@NamaVaksin", txtNamaVaksin.Text.Trim());
+                if ((int)cmdCekNama.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("Nama vaksin sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (!System.Text.RegularExpressions.Regex.IsMatch(txtNamaVaksin.Text, "^[a-zA-Z\\s]+$"))
+                {
+                    MessageBox.Show("Nama vaksin hanya boleh mengandung huruf dan spasi.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+
+                var transaction = con.BeginTransaction();
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("AddVaksin", con, transaction))
+                    using (var cmd = new SqlCommand("AddVaksin", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
@@ -96,24 +129,48 @@ namespace Ucppabd
                 MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (!DateTime.TryParse(txtTanggalKadaluarsa.Text, out DateTime tanggalKadaluarsa))
             {
                 MessageBox.Show("Format tanggal tidak valid.", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (tanggalKadaluarsa.Date <= DateTime.Now.Date)
+            {
+                MessageBox.Show("Tanggal kadaluarsa harus di masa depan.", "Validasi Tanggal", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!System.Text.RegularExpressions.Regex.IsMatch(txtNamaVaksin.Text, "^[a-zA-Z\\s]+$"))
+            {
+                MessageBox.Show("Nama vaksin hanya boleh mengandung huruf dan spasi.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+
+            string currentId = txtIDVaksin.Text.Trim();
+            string newName = txtNamaVaksin.Text.Trim();
+
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                SqlTransaction transaction = con.BeginTransaction();
+
+                // Validasi nama vaksin unik untuk ID lain
+                var cmdCek = new SqlCommand("SELECT COUNT(*) FROM dbo.Vaksin WHERE NamaVaksin = @NamaVaksin AND ID_Vaksin != @ID_Vaksin", con);
+                cmdCek.Parameters.AddWithValue("@NamaVaksin", newName);
+                cmdCek.Parameters.AddWithValue("@ID_Vaksin", currentId);
+                if ((int)cmdCek.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("Nama vaksin tersebut sudah digunakan oleh ID lain.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var transaction = con.BeginTransaction();
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("UpdateVaksin", con, transaction))
+                    using (var cmd = new SqlCommand("UpdateVaksin", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@ID_Vaksin", txtIDVaksin.Text.Trim());
-                        cmd.Parameters.AddWithValue("@NamaVaksin", txtNamaVaksin.Text.Trim());
+                        cmd.Parameters.AddWithValue("@ID_Vaksin", currentId);
+                        cmd.Parameters.AddWithValue("@NamaVaksin", newName);
                         cmd.Parameters.AddWithValue("@TanggalKadaluarsa", tanggalKadaluarsa);
                         cmd.ExecuteNonQuery();
                     }
@@ -138,47 +195,51 @@ namespace Ucppabd
                 MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (MessageBox.Show("Yakin ingin menghapus data Vaksin ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
 
-            var confirm = MessageBox.Show("Yakin ingin menghapus data Vaksin ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
+            string id = dataGridViewVaksin.CurrentRow.Cells["ID_Vaksin"].Value.ToString();
+
+            using (var con = new SqlConnection(strKonek))
             {
-                string id = dataGridViewVaksin.CurrentRow.Cells["ID_Vaksin"].Value.ToString();
-
-                using (SqlConnection con = new SqlConnection(connectionString))
+                con.Open();
+                var transaction = con.BeginTransaction();
+                try
                 {
-                    con.Open();
-                    SqlTransaction transaction = con.BeginTransaction();
-                    try
+                    using (var cmd = new SqlCommand("DeleteVaksin", con, transaction))
                     {
-                        using (SqlCommand cmd = new SqlCommand("DeleteVaksin", con, transaction))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID_Vaksin", id);
-                            cmd.ExecuteNonQuery();
-                        }
-                        transaction.Commit();
-                        _vaksinCache = null;
-                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID_Vaksin", id);
+                        cmd.ExecuteNonQuery();
                     }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    transaction.Commit();
+                    _vaksinCache = null;
+                    MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
 
         private void dataGridViewVaksin_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0)
+            if (e.RowIndex < 0) return;
+            try
             {
                 DataGridViewRow row = dataGridViewVaksin.Rows[e.RowIndex];
-                txtIDVaksin.Text = row.Cells["ID_Vaksin"].Value.ToString();
-                txtNamaVaksin.Text = row.Cells["NamaVaksin"].Value.ToString();
+                txtIDVaksin.Text = Convert.ToString(row.Cells["ID_Vaksin"].Value);
+                txtNamaVaksin.Text = Convert.ToString(row.Cells["NamaVaksin"].Value);
                 txtTanggalKadaluarsa.Text = Convert.ToDateTime(row.Cells["TanggalKadaluarsa"].Value).ToString("yyyy-MM-dd");
+                txtIDVaksin.ReadOnly = true; // Kunci ID saat update
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal memilih data: " + ex.Message);
             }
         }
 
@@ -187,11 +248,9 @@ namespace Ucppabd
             txtIDVaksin.Clear();
             txtNamaVaksin.Clear();
             txtTanggalKadaluarsa.Clear();
+            txtIDVaksin.ReadOnly = false; // Buka kunci ID untuk data baru
         }
 
-        private void Vaksin_Load(object sender, EventArgs e)
-        {
-            LoadData();
-        }
+        private void Vaksin_Load(object sender, EventArgs e) { }
     }
 }

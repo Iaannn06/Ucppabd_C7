@@ -7,7 +7,9 @@ namespace Ucppabd
 {
     public partial class Pemilik : Form
     {
-        static string connectionString = "Data Source=DESKTOP-L9CBIM9\\SQLEXPRESS01;Initial Catalog=ProjecctPABD;Integrated Security=True";
+        // 1. Koneksi terpusat
+        private Koneksi koneksi = new Koneksi();
+        private string strKonek;
 
         private DataTable _pemilikCache = null;
         private DateTime _cacheTime;
@@ -16,6 +18,7 @@ namespace Ucppabd
         public Pemilik()
         {
             InitializeComponent();
+            strKonek = koneksi.connectionString(); 
             LoadData();
             dataGridViewPemilik.CellClick += DataGridViewPemilik_CellClick;
         }
@@ -27,21 +30,18 @@ namespace Ucppabd
                 dataGridViewPemilik.DataSource = _pemilikCache;
                 return;
             }
-
             try
             {
-                using (SqlConnection con = new SqlConnection(connectionString))
+                using (var con = new SqlConnection(strKonek))
+                using (var cmd = new SqlCommand("GetAllPemilik", con))
                 {
-                    using (SqlCommand cmd = new SqlCommand("GetAllPemilik", con))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        SqlDataAdapter da = new SqlDataAdapter(cmd);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        _pemilikCache = dt;
-                        _cacheTime = DateTime.Now;
-                        dataGridViewPemilik.DataSource = _pemilikCache;
-                    }
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    var da = new SqlDataAdapter(cmd);
+                    var dt = new DataTable();
+                    da.Fill(dt);
+                    _pemilikCache = dt;
+                    _cacheTime = DateTime.Now;
+                    dataGridViewPemilik.DataSource = _pemilikCache;
                 }
             }
             catch (Exception ex)
@@ -52,31 +52,121 @@ namespace Ucppabd
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtIDPemilik.Text) || string.IsNullOrWhiteSpace(txtNama.Text))
+            if (string.IsNullOrWhiteSpace(txtIDPemilik.Text) || string.IsNullOrWhiteSpace(txtNama.Text) || string.IsNullOrWhiteSpace(txtEmail.Text) || string.IsNullOrWhiteSpace(txtTelepon.Text))
             {
-                MessageBox.Show("ID Pemilik dan Nama wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Semua field wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                SqlTransaction transaction = con.BeginTransaction();
+
+                // Validasi data duplikat sebelum insert
+                var cmdId = new SqlCommand("SELECT COUNT(*) FROM dbo.Pemilik WHERE ID_Pemilik = @ID_Pemilik", con);
+                cmdId.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
+                if ((int)cmdId.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("ID Pemilik sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var cmdEmail = new SqlCommand("SELECT COUNT(*) FROM dbo.Pemilik WHERE Email = @Email", con);
+                cmdEmail.Parameters.AddWithValue("@Email", txtEmail.Text.Trim());
+                if ((int)cmdEmail.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("Email sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var cmdTelepon = new SqlCommand("SELECT COUNT(*) FROM dbo.Pemilik WHERE Telepon = @Telepon", con);
+                cmdTelepon.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
+                if ((int)cmdTelepon.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("Nomor telepon sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var transaction = con.BeginTransaction();
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("AddPemilik", con, transaction))
+                    using (var cmd = new SqlCommand("AddPemilik", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
                         cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
                         cmd.Parameters.AddWithValue("@Email", txtEmail.Text.Trim());
                         cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
-
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
                     _pemilikCache = null;
                     MessageBox.Show("Data pemilik berhasil ditambahkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    ClearForm();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewPemilik.CurrentRow == null)
+            {
+                MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string currentId = txtIDPemilik.Text.Trim();
+            string newEmail = txtEmail.Text.Trim();
+            string newTelepon = txtTelepon.Text.Trim();
+
+            string originalEmail = dataGridViewPemilik.CurrentRow.Cells["Email"].Value.ToString();
+            string originalTelepon = dataGridViewPemilik.CurrentRow.Cells["Telepon"].Value.ToString();
+
+            using (var con = new SqlConnection(strKonek))
+            {
+                con.Open();
+
+                // Validasi duplikat cerdas: hanya cek jika data diubah
+                if (newEmail != originalEmail)
+                {
+                    var cmdEmail = new SqlCommand("SELECT COUNT(*) FROM dbo.Pemilik WHERE Email = @Email", con);
+                    cmdEmail.Parameters.AddWithValue("@Email", newEmail);
+                    if ((int)cmdEmail.ExecuteScalar() > 0)
+                    {
+                        MessageBox.Show("Email sudah terdaftar untuk pemilik lain.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+                if (newTelepon != originalTelepon)
+                {
+                    var cmdTelepon = new SqlCommand("SELECT COUNT(*) FROM dbo.Pemilik WHERE Telepon = @Telepon", con);
+                    cmdTelepon.Parameters.AddWithValue("@Telepon", newTelepon);
+                    if ((int)cmdTelepon.ExecuteScalar() > 0)
+                    {
+                        MessageBox.Show("Nomor telepon sudah terdaftar untuk pemilik lain.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+
+                var transaction = con.BeginTransaction();
+                try
+                {
+                    using (var cmd = new SqlCommand("UpdatePemilik", con, transaction))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID_Pemilik", currentId);
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Email", newEmail);
+                        cmd.Parameters.AddWithValue("@Telepon", newTelepon);
+                        cmd.ExecuteNonQuery();
+                    }
+                    transaction.Commit();
+                    _pemilikCache = null;
+                    MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
                 }
@@ -95,66 +185,26 @@ namespace Ucppabd
                 MessageBox.Show("Pilih data yang akan dihapus!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            var confirm = MessageBox.Show("Yakin ingin menghapus data pemilik ini? Menghapus pemilik juga akan menghapus data hewan terkait.", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
-            {
-                string id = dataGridViewPemilik.CurrentRow.Cells["ID_Pemilik"].Value.ToString();
-
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    con.Open();
-                    SqlTransaction transaction = con.BeginTransaction();
-                    try
-                    {
-                        using (SqlCommand cmd = new SqlCommand("DeletePemilik", con, transaction))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID_Pemilik", id);
-                            cmd.ExecuteNonQuery();
-                        }
-                        transaction.Commit();
-                        _pemilikCache = null;
-                        MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        LoadData();
-                        ClearForm();
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show("Error: " + ex.Message, "Kesalahan", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-            }
-        }
-
-        private void btnUpdate_Click(object sender, EventArgs e)
-        {
-            if (dataGridViewPemilik.CurrentRow == null)
-            {
-                MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            if (MessageBox.Show("Yakin ingin menghapus data pemilik ini? Ini akan gagal jika pemilik masih memiliki hewan.", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
-            }
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+            string id = dataGridViewPemilik.CurrentRow.Cells["ID_Pemilik"].Value.ToString();
+
+            using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                SqlTransaction transaction = con.BeginTransaction();
+                var transaction = con.BeginTransaction();
                 try
                 {
-                    using (SqlCommand cmd = new SqlCommand("UpdatePemilik", con, transaction))
+                    using (var cmd = new SqlCommand("DeletePemilik", con, transaction))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Email", txtEmail.Text.Trim());
-                        cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
-
+                        cmd.Parameters.AddWithValue("@ID_Pemilik", id);
                         cmd.ExecuteNonQuery();
                     }
                     transaction.Commit();
                     _pemilikCache = null;
-                    MessageBox.Show("Data berhasil diperbarui.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Data berhasil dihapus.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                     ClearForm();
                 }
@@ -168,14 +218,16 @@ namespace Ucppabd
 
         private void DataGridViewPemilik_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0)
-            {
-                DataGridViewRow row = dataGridViewPemilik.Rows[e.RowIndex];
-                txtIDPemilik.Text = row.Cells["ID_Pemilik"].Value.ToString();
-                txtNama.Text = row.Cells["Nama"].Value.ToString();
-                txtEmail.Text = row.Cells["Email"].Value.ToString();
-                txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
-            }
+            if (e.RowIndex < 0) return;
+
+            DataGridViewRow row = dataGridViewPemilik.Rows[e.RowIndex];
+            txtIDPemilik.Text = Convert.ToString(row.Cells["ID_Pemilik"].Value);
+            txtNama.Text = Convert.ToString(row.Cells["Nama"].Value);
+            txtEmail.Text = Convert.ToString(row.Cells["Email"].Value);
+            txtTelepon.Text = Convert.ToString(row.Cells["Telepon"].Value);
+
+            // Kunci ID saat mode update
+            txtIDPemilik.ReadOnly = true;
         }
 
         private void ClearForm()
@@ -184,6 +236,9 @@ namespace Ucppabd
             txtNama.Clear();
             txtEmail.Clear();
             txtTelepon.Clear();
+
+            // Buka kunci ID untuk input data baru
+            txtIDPemilik.ReadOnly = false;
         }
 
         private void Pemilik_Load(object sender, EventArgs e) { }
