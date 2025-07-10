@@ -8,7 +8,6 @@ namespace Ucppabd
 {
     public partial class Dokter : Form
     {
-        // 1. Membuat instance dari kelas Koneksi dan variabel string koneksi
         private Koneksi koneksi = new Koneksi();
         private string strKonek;
 
@@ -19,10 +18,7 @@ namespace Ucppabd
         public Dokter()
         {
             InitializeComponent();
-
-            // 2. Mengambil connection string dari kelas Koneksi
-            strKonek = koneksi.connectionString();
-
+            strKonek = koneksi.connectionString(); // Asumsi Koneksi.cs sudah standar
             LoadData();
             dataGridViewDokter.CellClick += dataGridViewDokter_CellContentClick;
         }
@@ -61,34 +57,23 @@ namespace Ucppabd
                 MessageBox.Show("Semua field wajib diisi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
-            // Validasi Nama: Hanya huruf, spasi, titik, dan strip
-            if (!Regex.IsMatch(txtNama.Text, "^[a-zA-Z\\s.-]+$"))
+            if (!Regex.IsMatch(txtNama.Text, @"^[a-zA-Z\s.-]+$"))
             {
                 MessageBox.Show("Nama hanya boleh mengandung huruf, spasi, titik, dan strip.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
-            // --- VALIDASI BARU ---
-            // Validasi Spesialisasi: Hanya huruf dan spasi
-            if (!Regex.IsMatch(txtSpesialisasi.Text, "^[a-zA-Z\\s]+$"))
+            if (!Regex.IsMatch(txtSpesialisasi.Text, @"^[a-zA-Z\s]+$"))
             {
                 MessageBox.Show("Spesialisasi hanya boleh mengandung huruf dan spasi.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
-            // Validasi Telepon: Hanya angka, 10-13 digit
-            if (!Regex.IsMatch(txtTelepon.Text, "^\\d{10,13}$"))
+            if (!Regex.IsMatch(txtTelepon.Text, @"^\d{10,13}$"))
             {
-                MessageBox.Show("Nomor telepon harus berupa angka 10-13 digit.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Nomor telepon harus berupa angka dengan panjang 10-13 digit.", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
-
             return true;
         }
-
-        // --- Sisa kode (btnTambah, btnUpdate, dll.) tidak diubah ---
-        // --- karena mereka sudah memanggil method ValidasiInput() ---
 
         private void btnTambah_Click(object sender, EventArgs e)
         {
@@ -97,30 +82,45 @@ namespace Ucppabd
             using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                using (var tx = con.BeginTransaction())
+
+                // Validasi duplikat sebelum insert
+                var cmdId = new SqlCommand("SELECT COUNT(*) FROM dbo.Dokter WHERE ID = @ID", con);
+                cmdId.Parameters.AddWithValue("@ID", txtID.Text.Trim());
+                if ((int)cmdId.ExecuteScalar() > 0)
                 {
-                    try
+                    MessageBox.Show("ID Dokter sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var cmdTelepon = new SqlCommand("SELECT COUNT(*) FROM dbo.Dokter WHERE Telepon = @Telepon", con);
+                cmdTelepon.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
+                if ((int)cmdTelepon.ExecuteScalar() > 0)
+                {
+                    MessageBox.Show("Nomor telepon sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var transaction = con.BeginTransaction();
+                try
+                {
+                    using (var cmd = new SqlCommand("AddDokter", con, transaction))
                     {
-                        using (var cmd = new SqlCommand("AddDokter", con, tx))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
-                            cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
-                            cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
-                            cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
-                            cmd.ExecuteNonQuery();
-                        }
-                        tx.Commit();
-                        _dokterCache = null;
-                        MessageBox.Show("Data dokter berhasil ditambahkan.");
-                        LoadData();
-                        ClearForm();
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
+                        cmd.ExecuteNonQuery();
                     }
-                    catch (Exception ex)
-                    {
-                        tx.Rollback();
-                        MessageBox.Show("Gagal menambahkan data: " + ex.Message);
-                    }
+                    transaction.Commit();
+                    _dokterCache = null;
+                    MessageBox.Show("Data dokter berhasil ditambahkan.");
+                    LoadData();
+                    ClearForm();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    MessageBox.Show("Gagal menambahkan data: " + ex.Message);
                 }
             }
         }
@@ -134,33 +134,47 @@ namespace Ucppabd
             }
             if (!ValidasiInput()) return;
 
+            string currentId = txtID.Text.Trim();
+            string newTelepon = txtTelepon.Text.Trim();
+            string originalTelepon = dataGridViewDokter.CurrentRow.Cells["Telepon"].Value.ToString();
+
             using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
-                using (var tx = con.BeginTransaction())
+
+                if (newTelepon != originalTelepon)
                 {
-                    try
+                    var cmdCekTelepon = new SqlCommand("SELECT COUNT(*) FROM dbo.Dokter WHERE Telepon = @Telepon", con);
+                    cmdCekTelepon.Parameters.AddWithValue("@Telepon", newTelepon);
+                    if ((int)cmdCekTelepon.ExecuteScalar() > 0)
                     {
-                        using (var cmd = new SqlCommand("UpdateDokter", con, tx))
-                        {
-                            cmd.CommandType = CommandType.StoredProcedure;
-                            cmd.Parameters.AddWithValue("@ID", txtID.Text.Trim());
-                            cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
-                            cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
-                            cmd.Parameters.AddWithValue("@Telepon", txtTelepon.Text.Trim());
-                            cmd.ExecuteNonQuery();
-                        }
-                        tx.Commit();
-                        _dokterCache = null;
-                        MessageBox.Show("Data berhasil diperbarui.");
-                        LoadData();
-                        ClearForm();
+                        MessageBox.Show("Nomor telepon sudah digunakan oleh dokter lain.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
-                    catch (Exception ex)
+                }
+
+                var transaction = con.BeginTransaction();
+                try
+                {
+                    using (var cmd = new SqlCommand("UpdateDokter", con, transaction))
                     {
-                        tx.Rollback();
-                        MessageBox.Show("Gagal memperbarui data: " + ex.Message);
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@ID", currentId);
+                        cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Spesialisasi", txtSpesialisasi.Text.Trim());
+                        cmd.Parameters.AddWithValue("@Telepon", newTelepon);
+                        cmd.ExecuteNonQuery();
                     }
+                    transaction.Commit();
+                    _dokterCache = null;
+                    MessageBox.Show("Data berhasil diperbarui.");
+                    LoadData();
+                    ClearForm();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    MessageBox.Show("Gagal memperbarui data: " + ex.Message);
                 }
             }
         }
@@ -212,7 +226,7 @@ namespace Ucppabd
             txtNama.Text = row.Cells["Nama"].Value.ToString();
             txtSpesialisasi.Text = row.Cells["Spesialisasi"].Value.ToString();
             txtTelepon.Text = row.Cells["Telepon"].Value.ToString();
-            txtID.ReadOnly = true; // Kunci ID saat update
+            txtID.ReadOnly = true;
         }
 
         private void ClearForm()
@@ -221,7 +235,7 @@ namespace Ucppabd
             txtNama.Clear();
             txtSpesialisasi.Clear();
             txtTelepon.Clear();
-            txtID.ReadOnly = false; // Buka kunci ID untuk data baru
+            txtID.ReadOnly = false;
         }
 
         private void Dokter_Load(object sender, EventArgs e) { }

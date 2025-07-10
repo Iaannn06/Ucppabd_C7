@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace Ucppabd
 {
     public partial class Pemilik : Form
     {
-        // 1. Koneksi terpusat
         private Koneksi koneksi = new Koneksi();
         private string strKonek;
 
@@ -50,19 +50,53 @@ namespace Ucppabd
             }
         }
 
-        private void btnTambah_Click(object sender, EventArgs e)
+        // --- METHOD VALIDASI BARU ---
+        private bool ValidasiInput()
         {
-            if (string.IsNullOrWhiteSpace(txtIDPemilik.Text) || string.IsNullOrWhiteSpace(txtNama.Text) || string.IsNullOrWhiteSpace(txtEmail.Text) || string.IsNullOrWhiteSpace(txtTelepon.Text))
+            // 1. Cek semua field wajib diisi
+            if (string.IsNullOrWhiteSpace(txtIDPemilik.Text) ||
+                string.IsNullOrWhiteSpace(txtNama.Text) ||
+                string.IsNullOrWhiteSpace(txtEmail.Text) ||
+                string.IsNullOrWhiteSpace(txtTelepon.Text))
             {
                 MessageBox.Show("Semua field wajib diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                return false;
             }
+
+            // 2. Validasi format Nama (hanya huruf, spasi, titik, strip)
+            if (!Regex.IsMatch(txtNama.Text, @"^[a-zA-Z\s.-]+$"))
+            {
+                MessageBox.Show("Nama hanya boleh mengandung huruf, spasi, titik, dan strip.", "Validasi Nama", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            // 3. Validasi format Email (wajib ada @ dan .)
+            if (!txtEmail.Text.Contains("@") || !txtEmail.Text.Contains("."))
+            {
+                MessageBox.Show("Format email tidak valid. Pastikan mengandung '@' dan '.'.", "Validasi Email", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            // 4. Validasi format Telepon (hanya angka, 10-13 digit)
+            if (!Regex.IsMatch(txtTelepon.Text, @"^\d{10,13}$"))
+            {
+                MessageBox.Show("Nomor telepon harus berupa angka dengan panjang 10-13 digit.", "Validasi Telepon", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true; // Semua validasi lolos
+        }
+
+        private void btnTambah_Click(object sender, EventArgs e)
+        {
+            // Panggil method validasi utama
+            if (!ValidasiInput()) return;
 
             using (var con = new SqlConnection(strKonek))
             {
                 con.Open();
 
-                // Validasi data duplikat sebelum insert
+                // Validasi duplikat data sebelum insert
                 var cmdId = new SqlCommand("SELECT COUNT(*) FROM dbo.Pemilik WHERE ID_Pemilik = @ID_Pemilik", con);
                 cmdId.Parameters.AddWithValue("@ID_Pemilik", txtIDPemilik.Text.Trim());
                 if ((int)cmdId.ExecuteScalar() > 0)
@@ -84,6 +118,8 @@ namespace Ucppabd
                     MessageBox.Show("Nomor telepon sudah terdaftar.", "Duplikat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+
+            
 
                 var transaction = con.BeginTransaction();
                 try
@@ -118,6 +154,9 @@ namespace Ucppabd
                 MessageBox.Show("Pilih data yang akan diupdate!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            // Panggil method validasi utama
+            if (!ValidasiInput()) return;
 
             string currentId = txtIDPemilik.Text.Trim();
             string newEmail = txtEmail.Text.Trim();
@@ -226,7 +265,6 @@ namespace Ucppabd
             txtEmail.Text = Convert.ToString(row.Cells["Email"].Value);
             txtTelepon.Text = Convert.ToString(row.Cells["Telepon"].Value);
 
-            // Kunci ID saat mode update
             txtIDPemilik.ReadOnly = true;
         }
 
@@ -237,7 +275,6 @@ namespace Ucppabd
             txtEmail.Clear();
             txtTelepon.Clear();
 
-            // Buka kunci ID untuk input data baru
             txtIDPemilik.ReadOnly = false;
         }
 
